@@ -46,7 +46,18 @@ export async function evaluateCandidateAnswer(
   input: AnswerEvaluationInput
 ): Promise<AnswerEvaluationOutput> {
   const startTime = Date.now();
-  const { question, answer, plan, learningObjectives, previousTurn, forceFallback } = input;
+  const { question, answer, learningObjectives, previousTurn, forceFallback } = input;
+  const plan: QuestionPlan = input.plan || {
+    topic: question.topic,
+    curriculumDay: question.curriculumDay,
+    difficulty: question.difficulty,
+    action: question.action,
+    objective: question.reasonForQuestion || question.topic,
+    basedOnQuestionId: question.basedOnQuestionId,
+    reasonForSelection: "Turn evaluation",
+    expectedCompetency: question.topic,
+    coverageImpact: { addsNewCurriculumDay: false, uniqueDaysAfterQuestion: 1 },
+  };
 
   const trimmedAnswer = (answer || "").trim();
 

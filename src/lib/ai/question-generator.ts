@@ -13,12 +13,12 @@ import { buildPlaceholderQuestion } from "@/lib/interview/question-template";
 
 export interface QuestionGenerationInput {
   plan: QuestionPlan;
-  candidateContext: {
+  candidateContext?: {
     role?: string;
     experience?: number;
     relevantEvidence: string[];
   };
-  curriculumContext: {
+  curriculumContext?: {
     topic: string;
     module: string;
     learningObjectives: string[];
@@ -51,7 +51,13 @@ export async function generateInterviewQuestion(
   input: QuestionGenerationInput
 ): Promise<QuestionGenerationOutput> {
   const startTime = Date.now();
-  const { plan, candidateContext, curriculumContext, recentConversation, forceFallback } = input;
+  const { plan, recentConversation, forceFallback } = input;
+  const candidateContext = input.candidateContext || { relevantEvidence: [] };
+  const curriculumContext = input.curriculumContext || {
+    topic: plan.topic,
+    module: plan.moduleTitle,
+    learningObjectives: [],
+  };
 
   // 1. Mandatory Fallback Check if forced or API key missing
   if (forceFallback || !isGeminiConfigured()) {
@@ -156,12 +162,13 @@ export async function generateInterviewQuestion(
 
 function buildPromptString(
   plan: QuestionPlan,
-  candidateContext: QuestionGenerationInput["candidateContext"],
-  curriculumContext: QuestionGenerationInput["curriculumContext"],
+  candidateContext?: QuestionGenerationInput["candidateContext"],
+  curriculumContext?: QuestionGenerationInput["curriculumContext"],
   recentConversation?: QuestionGenerationInput["recentConversation"]
 ): string {
-  const objectivesStr = curriculumContext.learningObjectives.length > 0
-    ? curriculumContext.learningObjectives.join("; ")
+  const learningObjs = curriculumContext?.learningObjectives || [];
+  const objectivesStr = learningObjs.length > 0
+    ? learningObjs.join("; ")
     : `Core mechanics of ${plan.topic}`;
 
   let prompt = `APPROVED INTERVIEW STRATEGY PLAN:
@@ -171,7 +178,7 @@ function buildPromptString(
 - Technical Objective: ${plan.objective}
 - Curriculum Objectives: ${objectivesStr}`;
 
-  if (candidateContext.role) {
+  if (candidateContext?.role) {
     prompt += `\n- Candidate Background: ${candidateContext.role} (${candidateContext.experience || 0} years exp)`;
   }
 
@@ -235,9 +242,22 @@ function createFallbackOutput(
   durationMs: number
 ): QuestionGenerationOutput {
   const placeholder = buildPlaceholderQuestion(plan);
+  let text = placeholder.text;
+
+  if (plan.action === "follow_up") {
+    text = `Following up on ${plan.topic}: ${text}`;
+  } else if (plan.action === "clarify") {
+    text = `To clarify your earlier statement on ${plan.topic}: ${text}`;
+  } else if (plan.action === "challenge") {
+    text = `To challenge this architectural assumption regarding ${plan.topic}: ${text}`;
+  } else if (plan.action === "deepen") {
+    text = `Deepening into ${plan.topic} advanced details: ${text}`;
+  } else if (plan.action === "probe") {
+    text = `Probing fundamental principles of ${plan.topic}: ${text}`;
+  }
 
   return {
-    question: placeholder.text,
+    question: text,
     shortIntent: `Assess ${plan.topic} (${plan.difficulty})`,
     expectedCompetency: `${plan.topic} implementation and reasoning`,
     source: "fallback",
@@ -251,5 +271,32 @@ function createFallbackOutput(
       action: plan.action,
     },
     fallbackReason: reason,
+  };
+}
+
+export async function generateTechnicalQuestion(input: {
+  plan: QuestionPlan;
+  forceFallback?: boolean;
+}): Promise<{ question: InterviewQuestion; source: "gemini" | "fallback" }> {
+  const genOutput = await generateInterviewQuestion({
+    plan: input.plan,
+    forceFallback: input.forceFallback,
+  });
+
+  const question: InterviewQuestion = {
+    id: `q_${input.plan.curriculumDay}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`,
+    topic: input.plan.topic,
+    curriculumDay: input.plan.curriculumDay,
+    difficulty: input.plan.difficulty,
+    text: genOutput.question,
+    action: input.plan.action,
+    reasonForQuestion: input.plan.reasonForSelection,
+    basedOnQuestionId: input.plan.basedOnQuestionId,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    question,
+    source: genOutput.source,
   };
 }

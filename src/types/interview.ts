@@ -518,3 +518,62 @@ export type FinalInterviewReport = {
   recommendedNextSteps: string[];
   interviewSummary: string;
 };
+
+export type CandidateInterviewSnapshot = {
+  sessionId: string;
+  candidateName: string;
+  status: InterviewStatus;
+  currentQuestion: {
+    id: string;
+    text: string;
+    topic: string;
+    curriculumDay: number;
+    difficulty: DifficultyLevel;
+  } | null;
+  questionNumber: number;
+  coveredCurriculumDaysCount: number;
+  minimumQuestions: number;
+  minimumCurriculumDays: number;
+  canComplete: boolean;
+  isComplete: boolean;
+  progress: number;
+};
+
+export type OrchestrationEventType =
+  | "session_started"
+  | "question_planned"
+  | "question_generated"
+  | "answer_submitted"
+  | "answer_assessed"
+  | "memory_updated"
+  | "contradiction_detected"
+  | "evidence_added"
+  | "next_question_planned"
+  | "completion_eligible"
+  | "session_completed";
+
+export type InterviewEvent = {
+  id: string;
+  sessionId: string;
+  type: OrchestrationEventType;
+  timestamp: string;
+  payload: Record<string, unknown>;
+};
+
+export type InternalInterviewSnapshot = {
+  state: InterviewState;
+  events: InterviewEvent[];
+  latestPlan?: QuestionPlan;
+  latestAssessment?: AnswerAssessment;
+  memorySignals?: PlannerMemorySignal;
+  evidenceGapSignal?: EvidenceGapSignal;
+  canComplete: boolean;
+};
+
+export type OrchestrationResult = {
+  success: boolean;
+  snapshot: CandidateInterviewSnapshot;
+  events: InterviewEvent[];
+  internalSnapshot?: InternalInterviewSnapshot;
+  error?: string;
+};

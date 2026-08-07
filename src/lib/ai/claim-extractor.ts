@@ -35,7 +35,9 @@ PROMPT INJECTION PROTECTION:
 export async function extractClaimsFromAnswer(
   input: ClaimExtractionInput
 ): Promise<CandidateClaim[]> {
-  const { question, answer, plan, turnId, forceFallback } = input;
+  const { question, answer, turnId, forceFallback } = input;
+  const topic = input.plan ? input.plan.topic : question.topic;
+  const curriculumDay = input.plan ? input.plan.curriculumDay : question.curriculumDay;
   const trimmed = (answer || "").trim();
 
   // Special answers produce no claims
@@ -44,11 +46,11 @@ export async function extractClaimsFromAnswer(
   }
 
   if (forceFallback || !isGeminiConfigured()) {
-    return createDeterministicFallbackClaims(trimmed, plan, turnId, question.id);
+    return createDeterministicFallbackClaims(trimmed, topic, curriculumDay, turnId, question.id);
   }
 
   const prompt = `CLAIM EXTRACTION REQUEST:
-- Topic: ${plan.topic} (Curriculum Day ${plan.curriculumDay})
+- Topic: ${topic} (Curriculum Day ${curriculumDay})
 - Question Asked: "${question.text}"
 
 <candidate_response_untrusted>
@@ -94,7 +96,7 @@ INSTRUCTION: Extract 0 to 4 concise candidate claims from the candidate response
     });
 
     if (!result.ok) {
-      return createDeterministicFallbackClaims(trimmed, plan, turnId, question.id);
+      return createDeterministicFallbackClaims(trimmed, topic, curriculumDay, turnId, question.id);
     }
 
     const rawJson = JSON.parse(result.value.text);
@@ -117,8 +119,8 @@ INSTRUCTION: Extract 0 to 4 concise candidate claims from the candidate response
         id: `claim_${turnId}_${i + 1}_${Date.now().toString(36)}`,
         turnId,
         questionId: question.id,
-        topic: plan.topic,
-        curriculumDay: plan.curriculumDay,
+        topic,
+        curriculumDay,
         statement: item.statement.trim(),
         claimType: validateClaimType(item.claimType),
         polarity: validatePolarity(item.polarity),
@@ -135,7 +137,7 @@ INSTRUCTION: Extract 0 to 4 concise candidate claims from the candidate response
 
     return claims;
   } catch {
-    return createDeterministicFallbackClaims(trimmed, plan, turnId, question.id);
+    return createDeterministicFallbackClaims(trimmed, topic, curriculumDay, turnId, question.id);
   }
 }
 
@@ -157,7 +159,8 @@ function validatePolarity(val: unknown): "supports" | "rejects" | "neutral" | un
 
 function createDeterministicFallbackClaims(
   answer: string,
-  plan: QuestionPlan,
+  topic: string,
+  curriculumDay: number,
   turnId: string,
   questionId: string
 ): CandidateClaim[] {
@@ -172,8 +175,8 @@ function createDeterministicFallbackClaims(
       id: `claim_fb_${turnId}_1`,
       turnId,
       questionId,
-      topic: plan.topic,
-      curriculumDay: plan.curriculumDay,
+      topic,
+      curriculumDay,
       statement: firstSentence,
       claimType: "design_choice",
       polarity: "supports",
