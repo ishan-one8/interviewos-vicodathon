@@ -328,6 +328,89 @@ export type CompletionStatus = {
   reasons: string[];
 };
 
+export type ClaimType =
+  | "concept"
+  | "preference"
+  | "design_choice"
+  | "tradeoff"
+  | "process"
+  | "experience";
+
+export type ClaimPolarity = "supports" | "rejects" | "neutral";
+
+export const CandidateClaimSchema = z.object({
+  id: z.string(),
+  turnId: z.string(),
+  questionId: z.string(),
+  topic: z.string(),
+  curriculumDay: z.number(),
+  statement: z.string(),
+  claimType: z.enum(["concept", "preference", "design_choice", "tradeoff", "process", "experience"]),
+  polarity: z.enum(["supports", "rejects", "neutral"]).optional(),
+  confidence: z.number().min(0).max(1).default(0.85),
+  source: z.literal("candidate_answer").default("candidate_answer"),
+  createdAt: z.string(),
+});
+
+export type CandidateClaim = z.infer<typeof CandidateClaimSchema>;
+
+export type ContradictionStatus =
+  | "consistent"
+  | "possibly_contradictory"
+  | "contradictory"
+  | "context_changed"
+  | "insufficient_context";
+
+export const ContradictionSignalSchema = z.object({
+  id: z.string(),
+  earlierClaimId: z.string(),
+  laterClaimId: z.string(),
+  status: z.enum(["consistent", "possibly_contradictory", "contradictory", "context_changed", "insufficient_context"]),
+  topic: z.string(),
+  explanation: z.string(),
+  confidence: z.number().min(0).max(1).default(0.8),
+  recommendedAction: z.enum(["clarify", "challenge", "ignore"]),
+  probedCount: z.number().default(0),
+  resolved: z.boolean().default(false),
+});
+
+export type ContradictionSignal = z.infer<typeof ContradictionSignalSchema>;
+
+export type TopicMemory = {
+  topic: string;
+  turnIds: string[];
+  claimIds: string[];
+  demonstratedStrengths: string[];
+  unresolvedGaps: string[];
+  lastPerformanceSignal: PerformanceSignal;
+  probeCount: number;
+};
+
+export type MemoryIssue = {
+  id: string;
+  topic: string;
+  reason: string;
+  recommendedAction: "clarify" | "challenge";
+  sourceTurnIds: string[];
+  resolved: boolean;
+};
+
+export type InterviewMemory = {
+  claims: CandidateClaim[];
+  topicSummaries: TopicMemory[];
+  unresolvedQuestions: MemoryIssue[];
+  contradictionSignals: ContradictionSignal[];
+};
+
+export type PlannerMemorySignal = {
+  unresolvedContradiction: boolean;
+  topic?: string;
+  contradictionId?: string;
+  issueId?: string;
+  recommendedAction: "clarify" | "challenge" | "none";
+  reason: string;
+};
+
 export type InterviewState = {
   sessionId: string;
   candidate: CandidateProfile;
@@ -345,6 +428,7 @@ export type InterviewState = {
   currentDifficulty: DifficultyLevel;
   suggestedStartingTopics: SkillHypothesis[];
   failureReason: string | null;
+  memory?: InterviewMemory;
 };
 
 export type FinalTopicScore = {

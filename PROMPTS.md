@@ -221,3 +221,48 @@ Build a Gemini-powered Candidate Answer Intelligence Engine (`evaluateCandidateA
 - `npm run lint` returned 0 errors and 0 warnings.
 - Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors.
 
+---
+
+## Milestone 10 — Cross-Turn Interview Memory & Contradiction Detection
+
+**Assisted by:** Google Antigravity (Gemini 3.6 Flash)
+
+**Goal:**
+Build cross-turn interview memory (`InterviewMemory`), structured claim extraction (`extractClaimsFromAnswer`), hybrid contradiction detection (`analyzeContradictions`), and memory-aware planner signals (`getMemorySignalsForPlanner`) so InterviewOS remembers candidate statements across turns and resolves apparent inconsistencies gracefully.
+
+**Architectural Decisions:**
+1. **Strongly Typed Interview Memory:**
+   - Implemented `CandidateClaim`, `ContradictionSignal`, `TopicMemory`, `MemoryIssue`, and `InterviewMemory` in `src/types/interview.ts`.
+   - Immutable memory state helpers (`createEmptyMemory`, `addTurnToMemory`, `resolveMemoryIssue`, `resolveContradiction`) in `src/lib/interview/memory.ts`.
+2. **Grounded Claim Extraction:**
+   - Evaluates candidate answers per turn and extracts 0–4 concise technical claims (`extractClaimsFromAnswer`) using native `@google/genai` structured output (`Type.OBJECT`, `Type.ARRAY`).
+   - Candidate answers wrapped in `<candidate_response_untrusted>` XML tags for prompt injection protection.
+   - Claims deduplicated deterministically.
+3. **Deterministic Filtering + Gemini Contradiction Analysis:**
+   - `findComparableClaimPairs` pre-filters claims on same topic or related curriculum concept to minimize LLM token usage.
+   - `analyzeContradictions` classifies relationship into `consistent`, `possibly_contradictory`, `contradictory`, `context_changed`, or `insufficient_context`.
+   - Explanations are non-accusatory and strictly technical/neutral. Differences are treated as opportunities to clarify.
+4. **Adaptive Planner Memory Bridge:**
+   - `getMemorySignalsForPlanner` generates signals (`unresolvedContradiction`, `topic`, `recommendedAction`, `reason`) for `planNextQuestion`.
+   - Planner incorporates memory signals to select `action: "clarify"` or `action: "challenge"`.
+   - Hard state-machine guardrails (`MIN_QUESTIONS=8`, `MIN_CURRICULUM_DAYS=4`, `MAX_QUESTIONS=12`) and coverage rescue mode remain strictly authoritative.
+5. **Debug Endpoint & Test Suite:**
+   - Created `GET /api/debug/memory` route supporting `scenario=consistent|contradiction|context-change|resolved|injection`.
+   - Created `tests/memory.test.ts` containing 20 test cases (92/92 total tests passing across codebase).
+
+**Files Created / Modified:**
+- `src/types/interview.ts` — Added `CandidateClaim`, `ContradictionSignal`, `TopicMemory`, `MemoryIssue`, `InterviewMemory`, and `PlannerMemorySignal`.
+- `src/lib/ai/claim-extractor.ts` — Structured claim extraction service with prompt-injection defense.
+- `src/lib/ai/contradiction-detector.ts` — Pre-filtering and Gemini contradiction analyzer.
+- `src/lib/interview/memory.ts` — Immutable memory helpers and pure selectors.
+- `src/lib/interview/planner.ts` — Integrated `PlannerMemorySignal` override into `planNextQuestion`.
+- `src/app/api/debug/memory/route.ts` — Debug simulation route.
+- `tests/memory.test.ts` — 20-scenario test suite.
+- `PROMPTS.md` — Logged Milestone 10 progress.
+
+**Verification:**
+- Test suite passed 92/92 tests across all 6 test suites (`candidate-intelligence.test.ts`, `interview-state.test.ts`, `planner.test.ts`, `question-generator.test.ts`, `answer-evaluator.test.ts`, `memory.test.ts`).
+- `npm run lint` returned 0 errors and 0 warnings.
+- Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors.
+
+

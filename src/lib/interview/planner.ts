@@ -6,6 +6,7 @@ import {
   PerformanceSignal,
   QuestionPlan,
   SkillHypothesis,
+  PlannerMemorySignal,
 } from "@/types/interview";
 import { MIN_CURRICULUM_DAYS, MAX_QUESTIONS } from "@/lib/interview/constants";
 import { profileCandidate } from "@/lib/candidate/profiler";
@@ -20,6 +21,7 @@ import {
   rankScoredTopics,
   TopicScoreResult,
 } from "@/lib/interview/planner-scoring";
+import { getMemorySignalsForPlanner } from "@/lib/interview/memory";
 
 export interface PlanNextQuestionInput {
   state: InterviewState;
@@ -27,10 +29,12 @@ export interface PlanNextQuestionInput {
   candidateIntelligence?: CandidateIntelligenceReport;
   latestAssessment?: AnswerAssessment;
   performanceSignal?: PerformanceSignal;
+  memorySignals?: PlannerMemorySignal;
 }
 
 export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
   const { state, curriculum, latestAssessment, performanceSignal } = input;
+  const memorySignals = input.memorySignals || (state.memory ? getMemorySignalsForPlanner(state.memory) : undefined);
 
   const candidateIntelligence =
     input.candidateIntelligence ||
@@ -82,6 +86,21 @@ export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
     selected = rankedList[0];
   }
 
+  // Memory Signal Override (unless coverage rescue mode takes priority)
+  let memoryOverrideReason: string | null = null;
+  let memoryActionOverride: "clarify" | "challenge" | null = null;
+
+  if (!isCoverageRescue && memorySignals?.unresolvedContradiction && memorySignals.topic) {
+    const memoryTopicMatch = rankedList.find(
+      (item) => item.topic.topic.toLowerCase() === memorySignals.topic!.toLowerCase()
+    );
+    if (memoryTopicMatch) {
+      selected = memoryTopicMatch;
+      memoryActionOverride = memorySignals.recommendedAction === "challenge" ? "challenge" : "clarify";
+      memoryOverrideReason = `Cross-Turn Memory: Two earlier statements on '${memorySignals.topic}' appear inconsistent (${memorySignals.reason}). Selected for technical clarification.`;
+    }
+  }
+
   const lastTurn = state.turns.length > 0 ? state.turns[state.turns.length - 1] : null;
   const isSameTopicAsLast = Boolean(
     lastTurn && lastTurn.question.topic === selected.topic.topic
@@ -93,7 +112,7 @@ export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
     performanceSignal || (latestAssessment ? (latestAssessment.scores.correctness >= 4 ? "strong" : "partial") : undefined)
   );
 
-  const action = determineQuestionAction(
+  const action = memoryActionOverride || determineQuestionAction(
     selected.hypothesis,
     isSameTopicAsLast,
     performanceSignal
@@ -114,17 +133,19 @@ export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
       : undefined;
 
   // Build explicit, human-readable reason for selection
-  let reasonForSelection = "";
-  if (isCoverageRescue) {
-    reasonForSelection = `Coverage Rescue mode active: prioritizing Day ${selected.topic.day} (${selected.topic.topic}) to satisfy minimum ${MIN_CURRICULUM_DAYS} curriculum days requirement before reaching ${MAX_QUESTIONS}-question ceiling.`;
-  } else if (selected.hypothesis.attemptsCount >= 3) {
-    reasonForSelection = `Candidate completed Day ${selected.topic.day} (${selected.topic.topic}) but required ${selected.hypothesis.attemptsCount} attempts on mission. Selected for high-priority technical verification.`;
-  } else if (phase === "calibration" && selected.hypothesis.estimatedStrength >= 0.7) {
-    reasonForSelection = `Calibration Phase: Selected high-confidence topic Day ${selected.topic.day} (${selected.topic.topic}) to establish baseline competence at ${difficulty} depth.`;
-  } else if (addsNewCurriculumDay) {
-    reasonForSelection = `Phase [${phase.toUpperCase()}]: Expanding curriculum coverage to Day ${selected.topic.day} (${selected.topic.topic}) within module '${selected.topic.module}'.`;
-  } else {
-    reasonForSelection = `Phase [${phase.toUpperCase()}]: Probing ${action} on ${selected.topic.topic} at ${difficulty} level.`;
+  let reasonForSelection = memoryOverrideReason || "";
+  if (!reasonForSelection) {
+    if (isCoverageRescue) {
+      reasonForSelection = `Coverage Rescue mode active: prioritizing Day ${selected.topic.day} (${selected.topic.topic}) to satisfy minimum ${MIN_CURRICULUM_DAYS} curriculum days requirement before reaching ${MAX_QUESTIONS}-question ceiling.`;
+    } else if (selected.hypothesis.attemptsCount >= 3) {
+      reasonForSelection = `Candidate completed Day ${selected.topic.day} (${selected.topic.topic}) but required ${selected.hypothesis.attemptsCount} attempts on mission. Selected for high-priority technical verification.`;
+    } else if (phase === "calibration" && selected.hypothesis.estimatedStrength >= 0.7) {
+      reasonForSelection = `Calibration Phase: Selected high-confidence topic Day ${selected.topic.day} (${selected.topic.topic}) to establish baseline competence at ${difficulty} depth.`;
+    } else if (addsNewCurriculumDay) {
+      reasonForSelection = `Phase [${phase.toUpperCase()}]: Expanding curriculum coverage to Day ${selected.topic.day} (${selected.topic.topic}) within module '${selected.topic.module}'.`;
+    } else {
+      reasonForSelection = `Phase [${phase.toUpperCase()}]: Probing ${action} on ${selected.topic.topic} at ${difficulty} level.`;
+    }
   }
 
   const plannerSignals: string[] = [
