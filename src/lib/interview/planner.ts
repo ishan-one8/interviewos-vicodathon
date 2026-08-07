@@ -7,6 +7,7 @@ import {
   QuestionPlan,
   SkillHypothesis,
   PlannerMemorySignal,
+  EvidenceGapSignal,
 } from "@/types/interview";
 import { MIN_CURRICULUM_DAYS, MAX_QUESTIONS } from "@/lib/interview/constants";
 import { profileCandidate } from "@/lib/candidate/profiler";
@@ -22,6 +23,7 @@ import {
   TopicScoreResult,
 } from "@/lib/interview/planner-scoring";
 import { getMemorySignalsForPlanner } from "@/lib/interview/memory";
+import { getEvidenceGapSignalForPlanner } from "@/lib/interview/evidence-selectors";
 
 export interface PlanNextQuestionInput {
   state: InterviewState;
@@ -30,11 +32,13 @@ export interface PlanNextQuestionInput {
   latestAssessment?: AnswerAssessment;
   performanceSignal?: PerformanceSignal;
   memorySignals?: PlannerMemorySignal;
+  evidenceGapSignal?: EvidenceGapSignal;
 }
 
 export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
   const { state, curriculum, latestAssessment, performanceSignal } = input;
   const memorySignals = input.memorySignals || (state.memory ? getMemorySignalsForPlanner(state.memory) : undefined);
+  const evidenceGapSignal = input.evidenceGapSignal || (state.ledger ? getEvidenceGapSignalForPlanner(state.ledger, state) : undefined);
 
   const candidateIntelligence =
     input.candidateIntelligence ||
@@ -87,8 +91,8 @@ export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
   }
 
   // Memory Signal Override (unless coverage rescue mode takes priority)
-  let memoryOverrideReason: string | null = null;
-  let memoryActionOverride: "clarify" | "challenge" | null = null;
+  let overrideReason: string | null = null;
+  let actionOverride: "clarify" | "challenge" | "deepen" | null = null;
 
   if (!isCoverageRescue && memorySignals?.unresolvedContradiction && memorySignals.topic) {
     const memoryTopicMatch = rankedList.find(
@@ -96,8 +100,17 @@ export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
     );
     if (memoryTopicMatch) {
       selected = memoryTopicMatch;
-      memoryActionOverride = memorySignals.recommendedAction === "challenge" ? "challenge" : "clarify";
-      memoryOverrideReason = `Cross-Turn Memory: Two earlier statements on '${memorySignals.topic}' appear inconsistent (${memorySignals.reason}). Selected for technical clarification.`;
+      actionOverride = memorySignals.recommendedAction === "challenge" ? "challenge" : "clarify";
+      overrideReason = `Cross-Turn Memory: Two earlier statements on '${memorySignals.topic}' appear inconsistent (${memorySignals.reason}). Selected for technical clarification.`;
+    }
+  } else if (!isCoverageRescue && evidenceGapSignal?.hasGap && evidenceGapSignal.topic) {
+    const gapTopicMatch = rankedList.find(
+      (item) => item.topic.topic.toLowerCase() === evidenceGapSignal.topic!.toLowerCase()
+    );
+    if (gapTopicMatch) {
+      selected = gapTopicMatch;
+      actionOverride = "deepen";
+      overrideReason = `Evidence Ledger Gap: '${evidenceGapSignal.topic}' has observed evidence but lacks depth for ${evidenceGapSignal.missingCompetencies.join(", ")}. Selected to collect evidence.`;
     }
   }
 
@@ -112,7 +125,7 @@ export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
     performanceSignal || (latestAssessment ? (latestAssessment.scores.correctness >= 4 ? "strong" : "partial") : undefined)
   );
 
-  const action = memoryActionOverride || determineQuestionAction(
+  const action = actionOverride || determineQuestionAction(
     selected.hypothesis,
     isSameTopicAsLast,
     performanceSignal
@@ -133,7 +146,7 @@ export function planNextQuestion(input: PlanNextQuestionInput): QuestionPlan {
       : undefined;
 
   // Build explicit, human-readable reason for selection
-  let reasonForSelection = memoryOverrideReason || "";
+  let reasonForSelection = overrideReason || "";
   if (!reasonForSelection) {
     if (isCoverageRescue) {
       reasonForSelection = `Coverage Rescue mode active: prioritizing Day ${selected.topic.day} (${selected.topic.topic}) to satisfy minimum ${MIN_CURRICULUM_DAYS} curriculum days requirement before reaching ${MAX_QUESTIONS}-question ceiling.`;

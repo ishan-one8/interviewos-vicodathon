@@ -257,12 +257,49 @@ Build cross-turn interview memory (`InterviewMemory`), structured claim extracti
 - `src/lib/interview/memory.ts` — Immutable memory helpers and pure selectors.
 - `src/lib/interview/planner.ts` — Integrated `PlannerMemorySignal` override into `planNextQuestion`.
 - `src/app/api/debug/memory/route.ts` — Debug simulation route.
-- `tests/memory.test.ts` — 20-scenario test suite.
-- `PROMPTS.md` — Logged Milestone 10 progress.
+
+---
+
+## Milestone 11 — Evidence Ledger, Provenance Tracking & Competency Aggregation
+
+**Assisted by:** Google Antigravity (Gemini 3.6 Flash)
+
+**Goal:**
+Build an auditable Evidence Ledger (`EvidenceLedger`), strict provenance tracking (`Provenance`), competency evidence aggregation (`TopicEvidenceMatrix`), deterministic evidence weighting (`getEvidenceWeight`), and planner evidence-gap signals (`getEvidenceGapSignalForPlanner`) to ensure all future interview conclusions are backed by verified, auditable interview observations.
+
+**Architectural Decisions:**
+1. **Prior vs Observed Evidence Separation:**
+   - Milestone 5 Candidate Intelligence is treated strictly as **PRIOR INFORMATION** (used solely to guide initial question selection).
+   - Milestone 11 Evidence Ledger contains only **OBSERVED INTERVIEW EVIDENCE** demonstrated during actual interview turns. They are never mixed.
+2. **Strongly Typed Evidence Ledger Model:**
+   - Implemented `EvidenceEntry`, `Provenance`, `CompetencyCoverageItem`, `TopicEvidenceMatrix`, `EvidenceGapSignal`, and `EvidenceLedger` in `src/types/interview.ts`.
+   - Each entry records `questionId`, `turnId`, `curriculumDay`, `topic`, `competency` (`correctness`, `depth`, `reasoning`, `practicalUnderstanding`, `tradeoffAwareness`), `type` (`strength`, `gap`, `contradiction`, `clarification`, `refinement`), `observation`, `score`, `difficulty`, `confidence`, `source`, `weight`, and `provenance`.
+3. **Deterministic Evidence Creation & Weighting:**
+   - Derived zero-cost evidence from validated `AnswerAssessment` + `InterviewMemory` without making additional LLM API calls.
+   - `getEvidenceWeight` calculates normalized 0.0–1.0 weights based on question difficulty (`foundation: 0.6` to `tradeoff: 1.3`), confidence, and evidence type.
+   - Automatic deduplication prevents repetitive ledger entries.
+4. **Competency Evidence Matrix & Adaptive Planner Bridge:**
+   - `getEvidenceCoverageMatrix` constructs a topic x competency matrix mapping strengths and gaps.
+   - `getEvidenceGapSignalForPlanner` identifies topics with shallow evidence (e.g. definition questions answered, but lacking practical understanding or trade-off evidence).
+   - Planner (`planNextQuestion`) incorporates evidence-gap signals to select `action: "deepen"` while respecting Milestone 6 hard state-machine guardrails (`MIN_QUESTIONS=8`, `MIN_CURRICULUM_DAYS=4`, `MAX_QUESTIONS=12`) and coverage rescue mode.
+5. **Debug Endpoint & Test Suite:**
+   - Created `GET /api/debug/evidence` supporting `scenario=strength|mixed|contradiction|refinement|coverage-gap`.
+   - Created `tests/evidence.test.ts` containing 25 comprehensive test cases (117/117 total tests passing across codebase).
+
+**Files Created / Modified:**
+- `src/types/interview.ts` — Added `CompetencyDimension`, `EvidenceType`, `Provenance`, `EvidenceEntrySchema`, `EvidenceEntry`, `CompetencyCoverageItem`, `TopicEvidenceMatrix`, `EvidenceGapSignal`, and `EvidenceLedger`. Removed legacy `EvidenceEntry`.
+- `src/lib/interview/evidence-weight.ts` — Deterministic evidence weighting helper (`getEvidenceWeight`).
+- `src/lib/interview/evidence.ts` — Pure functions (`createEmptyLedger`, `createEvidenceFromTurn`, `addTurnEvidenceToLedger`, `addContradictionEvidenceToLedger`).
+- `src/lib/interview/evidence-selectors.ts` — Pure selectors (`getEvidenceForTopic`, `getEvidenceForCompetency`, `getStrengthEvidence`, `getGapEvidence`, `getEvidenceCoverageMatrix`, `getEvidenceGapSignalForPlanner`).
+- `src/lib/interview/planner.ts` — Integrated `EvidenceGapSignal` into `planNextQuestion`.
+- `src/app/api/debug/evidence/route.ts` — Debug API route returning audit trace, evidence ledger, and matrix.
+- `tests/evidence.test.ts` — 25-scenario test suite.
+- `PROMPTS.md` — Logged Milestone 11 progress.
 
 **Verification:**
-- Test suite passed 92/92 tests across all 6 test suites (`candidate-intelligence.test.ts`, `interview-state.test.ts`, `planner.test.ts`, `question-generator.test.ts`, `answer-evaluator.test.ts`, `memory.test.ts`).
+- Test suite passed 117/117 tests across all 7 test suites (`candidate-intelligence.test.ts`, `interview-state.test.ts`, `planner.test.ts`, `question-generator.test.ts`, `answer-evaluator.test.ts`, `memory.test.ts`, `evidence.test.ts`).
 - `npm run lint` returned 0 errors and 0 warnings.
 - Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors.
+
 
 

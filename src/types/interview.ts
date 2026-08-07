@@ -302,14 +302,6 @@ export type AnswerEvaluationOutput = AnswerAssessment & {
   fallbackReason?: string;
 };
 
-export type EvidenceEntry = {
-  id: string;
-  topic: string;
-  claim: string;
-  supportingEvidence: string[];
-  counterEvidence: string[];
-  confidence: number;
-};
 
 export type InterviewTurn = {
   question: InterviewQuestion;
@@ -411,6 +403,81 @@ export type PlannerMemorySignal = {
   reason: string;
 };
 
+export type CompetencyDimension =
+  | "correctness"
+  | "depth"
+  | "reasoning"
+  | "practicalUnderstanding"
+  | "tradeoffAwareness";
+
+export type EvidenceType =
+  | "strength"
+  | "gap"
+  | "contradiction"
+  | "clarification"
+  | "refinement";
+
+export type Provenance = {
+  questionId: string;
+  turnId: string;
+  curriculumDay: number;
+  topic: string;
+};
+
+export const EvidenceEntrySchema = z.object({
+  id: z.string(),
+  sessionId: z.string(),
+  turnId: z.string(),
+  questionId: z.string(),
+  topic: z.string(),
+  curriculumDay: z.number(),
+  competency: z.enum(["correctness", "depth", "reasoning", "practicalUnderstanding", "tradeoffAwareness"]),
+  type: z.enum(["strength", "gap", "contradiction", "clarification", "refinement"]),
+  observation: z.string(),
+  score: z.number().min(0).max(4).optional(),
+  difficulty: z.enum(["foundation", "intermediate", "advanced", "debugging", "architecture", "tradeoff"]),
+  confidence: z.number().min(0).max(1).default(0.85),
+  source: z.enum(["answer_assessment", "memory", "contradiction_analysis"]),
+  provenance: z.object({
+    questionId: z.string(),
+    turnId: z.string(),
+    curriculumDay: z.number(),
+    topic: z.string(),
+  }),
+  weight: z.number().min(0).max(1).default(0.5),
+  createdAt: z.string(),
+});
+
+export type EvidenceEntry = z.infer<typeof EvidenceEntrySchema>;
+
+export type CompetencyCoverageItem = {
+  competency: CompetencyDimension;
+  strengthCount: number;
+  gapCount: number;
+  totalEvidenceCount: number;
+};
+
+export type TopicEvidenceMatrix = {
+  topic: string;
+  curriculumDay: number;
+  competencies: Record<CompetencyDimension, CompetencyCoverageItem>;
+};
+
+export type EvidenceGapSignal = {
+  hasGap: boolean;
+  topic?: string;
+  missingCompetencies: CompetencyDimension[];
+  evidenceCount: number;
+  confidence: number;
+  reason: string;
+};
+
+export type EvidenceLedger = {
+  sessionId: string;
+  entries: EvidenceEntry[];
+  matrix: TopicEvidenceMatrix[];
+};
+
 export type InterviewState = {
   sessionId: string;
   candidate: CandidateProfile;
@@ -429,6 +496,7 @@ export type InterviewState = {
   suggestedStartingTopics: SkillHypothesis[];
   failureReason: string | null;
   memory?: InterviewMemory;
+  ledger?: EvidenceLedger;
 };
 
 export type FinalTopicScore = {
