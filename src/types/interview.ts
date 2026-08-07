@@ -22,8 +22,9 @@ export type QuestionAction =
 
 export type InterviewStatus =
   | "planning"
-  | "interviewing"
-  | "completed";
+  | "active"
+  | "completed"
+  | "failed";
 
 export type InterviewPriority =
   | "high"
@@ -199,6 +200,7 @@ export type InterviewQuestion = {
   action: QuestionAction;
   reasonForQuestion: string;
   basedOnQuestionId?: string;
+  createdAt: string;
 };
 
 export type AnswerAssessment = {
@@ -226,19 +228,37 @@ export type EvidenceEntry = {
 export type InterviewTurn = {
   question: InterviewQuestion;
   answer?: string;
+  submittedAt?: string;
   assessment?: AnswerAssessment;
+};
+
+export type CompletionStatus = {
+  eligible: boolean;
+  questionsAsked: number;
+  questionsRemaining: number;
+  uniqueCurriculumDays: number;
+  curriculumDaysRemaining: number;
+  maxQuestionsReached: boolean;
+  reasons: string[];
 };
 
 export type InterviewState = {
   sessionId: string;
   candidate: CandidateProfile;
+  intelligenceReport: CandidateIntelligenceReport;
   skillMap: SkillHypothesis[];
-  turns: InterviewTurn[];
-  evidenceLedger: EvidenceEntry[];
-  coveredDays: number[];
-  startedAt: string;
   status: InterviewStatus;
-  overallConfidence: number;
+  startedAt: string;
+  completedAt: string | null;
+  turns: InterviewTurn[];
+  currentQuestion: InterviewQuestion | null;
+  questionCount: number;
+  coveredCurriculumDays: number[];
+  coveredTopics: string[];
+  followUpCount: number;
+  currentDifficulty: DifficultyLevel;
+  suggestedStartingTopics: SkillHypothesis[];
+  failureReason: string | null;
 };
 
 export type FinalTopicScore = {
