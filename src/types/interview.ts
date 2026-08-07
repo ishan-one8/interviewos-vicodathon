@@ -269,17 +269,37 @@ export type QuestionGenerationOutput = {
   fallbackReason?: string;
 };
 
-export type AnswerAssessment = {
-  questionId: string;
-  answer: string;
-  scores: CompetencyScore;
-  strengths: string[];
-  gaps: string[];
-  contradictions: string[];
-  evidence: string[];
-  summary: string;
-  recommendedAction: QuestionAction;
-  recommendedDifficulty: DifficultyLevel;
+export const CompetencyScoreSchema = z.object({
+  correctness: z.number().min(0).max(4),
+  depth: z.number().min(0).max(4),
+  reasoning: z.number().min(0).max(4),
+  practicalUnderstanding: z.number().min(0).max(4),
+  tradeoffAwareness: z.number().min(0).max(4),
+});
+
+export const AnswerAssessmentSchema = z.object({
+  questionId: z.string(),
+  answer: z.string(),
+  performanceSignal: z.enum(["strong", "partial", "weak", "unclear"]),
+  scores: CompetencyScoreSchema,
+  strengths: z.array(z.string()).default([]),
+  gaps: z.array(z.string()).default([]),
+  contradictions: z.array(z.string()).default([]),
+  evidence: z.array(z.string()).default([]),
+  summary: z.string(),
+  recommendedAction: z.enum(["new_topic", "follow_up", "clarify", "challenge", "deepen", "finish"]),
+  recommendedDifficulty: z.enum(["foundation", "intermediate", "advanced", "debugging", "architecture", "tradeoff"]),
+  confidence: z.number().min(0).max(1).default(0.8),
+});
+
+export type AnswerAssessment = z.infer<typeof AnswerAssessmentSchema>;
+
+export type AnswerEvaluationOutput = AnswerAssessment & {
+  source: "gemini" | "fallback";
+  model: string;
+  generatedAt: string;
+  durationMs: number;
+  fallbackReason?: string;
 };
 
 export type EvidenceEntry = {

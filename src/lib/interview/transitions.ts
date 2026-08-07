@@ -152,9 +152,17 @@ export function submitAnswer(
 
 export function attachAssessment(
   state: InterviewState,
-  questionId: string,
-  assessment: AnswerAssessment
+  questionIdOrAssessment: string | AnswerAssessment,
+  assessmentArg?: AnswerAssessment
 ): Result<InterviewState> {
+  const questionId =
+    typeof questionIdOrAssessment === "string"
+      ? questionIdOrAssessment
+      : questionIdOrAssessment.questionId;
+  const assessment =
+    typeof questionIdOrAssessment === "string"
+      ? assessmentArg!
+      : questionIdOrAssessment;
   if (
     state.status === LIFECYCLE_STATUS.COMPLETED ||
     state.status === LIFECYCLE_STATUS.FAILED

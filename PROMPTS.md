@@ -174,3 +174,50 @@ Integrate Gemini-powered natural language technical question generation (`genera
 - Test suite passed 50/50 tests across all 4 test suites (`candidate-intelligence.test.ts`, `interview-state.test.ts`, `planner.test.ts`, `question-generator.test.ts`).
 - `npm run lint` returned 0 errors and 0 warnings.
 - Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors.
+
+---
+
+## Milestone 9 — Candidate Answer Intelligence Engine & Structured Competency Scoring
+
+**Assisted by:** Google Antigravity (Gemini 3.6 Flash)
+
+**Goal:**
+Build a Gemini-powered Candidate Answer Intelligence Engine (`evaluateCandidateAnswer`) with Zod-validated structured output, scoring across 5 technical competency dimensions on a strict 0–4 scale, prompt-injection defense, deterministic fallback evaluation, difficulty helpers, and seamless adaptive planner integration.
+
+**Architectural Decisions:**
+1. **Gemini as Evaluator, Code as Controller:**
+   - Gemini evaluates candidate answer semantic quality and returns structured assessment (`correctness`, `depth`, `reasoning`, `practicalUnderstanding`, `tradeoffAwareness`, `performanceSignal`, `strengths`, `gaps`, `evidence`, `summary`, `recommendedAction`, `recommendedDifficulty`, `confidence`).
+   - Code state machine strictly owns interview lifecycle, turn recording, question count, and completion eligibility.
+   - Adaptive Planner (`planNextQuestion`) consumes `performanceSignal` via an adaptation bridge to adjust next question strategy.
+2. **5 Competency Dimensions & 0–4 Scoring Scale:**
+   - `correctness` (0–4): Material technical correctness.
+   - `depth` (0–4): Knowledge beyond surface definitions.
+   - `reasoning` (0–4): Explanation of why and how.
+   - `practicalUnderstanding` (0–4): Application in real engineering scenarios.
+   - `tradeoffAwareness` (0–4): Recognition of trade-offs, limits, and alternatives.
+   - Verbosity is not rewarded; self-claims ("I am an expert") provide $0.0$ score advantage.
+3. **Native `@google/genai` Structured Output & Fallback Evaluator:**
+   - Implemented native `@google/genai` `Type.OBJECT`, `Type.NUMBER`, `Type.STRING`, `Type.ARRAY` schema definitions.
+   - Validates response with Zod `AnswerAssessmentSchema`.
+   - Deterministic fallback evaluator activates if `forceFallback`, API key is missing, network fails, or validation fails, returning a safe, conservative neutral evaluation (`confidence: 0.25`, `performanceSignal: "unclear"`).
+4. **Prompt Injection Safeguards & Special Answers:**
+   - Candidate answers wrapped in `<candidate_response_untrusted>` XML tags; system prompt instructs evaluator to ignore candidate attempts to override scores or system instructions.
+   - Special answer handlers evaluate empty answers, `"I don't know"`, and single-word vague answers (`"it depends"`, `"yes"`) deterministically.
+5. **Debug Endpoint & Test Suite:**
+   - Created `GET /api/debug/answer-evaluator` supporting `scenario=strong|partial|weak|unclear|injection|fallback`.
+   - Created `tests/answer-evaluator.test.ts` containing 22 verification tests (72/72 total tests passing across full codebase).
+
+**Files Created / Modified:**
+- `src/lib/interview/difficulty.ts` — `increaseDifficulty` and `decreaseDifficulty` progression helpers.
+- `src/types/interview.ts` — Added `CompetencyScoreSchema`, `AnswerAssessmentSchema`, `AnswerAssessment`, and `AnswerEvaluationOutput`.
+- `src/lib/interview/transitions.ts` — Updated `attachAssessment` to support `(state, assessment)` overload.
+- `src/lib/ai/answer-evaluator.ts` — Candidate answer intelligence engine, special answer handlers, injection defense, and fallback evaluator.
+- `src/app/api/debug/answer-evaluator/route.ts` — Debug simulation API route.
+- `tests/answer-evaluator.test.ts` — 22-scenario verification test suite.
+- `PROMPTS.md` — Logged Milestone 9 progress.
+
+**Verification:**
+- Test suite passed 72/72 tests across all 5 test suites (`candidate-intelligence.test.ts`, `interview-state.test.ts`, `planner.test.ts`, `question-generator.test.ts`, `answer-evaluator.test.ts`).
+- `npm run lint` returned 0 errors and 0 warnings.
+- Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors.
+
