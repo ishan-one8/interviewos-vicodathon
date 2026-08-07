@@ -135,7 +135,42 @@ Build a deterministic Adaptive Question Planner and Strategy Engine (`planNextQu
 - `tests/planner.test.ts` — 16-scenario verification test suite.
 - `PROMPTS.md` — Logged Milestone 7 progress.
 
+---
+
+## Milestone 8 — Gemini Technical Question Generator & Mandatory Fallback
+
+**Assisted by:** Google Antigravity (Gemini 3.6 Flash)
+
+**Goal:**
+Integrate Gemini-powered natural language technical question generation (`generateInterviewQuestion`) using `@google/genai` to turn approved `QuestionPlan` strategy objects into realistic, natural interviewer questions spoken by persona **Ari** (Senior AI Systems Engineer), with strict prompt injection defense and a mandatory deterministic fallback generator.
+
+**Architectural Decisions:**
+1. **Decoupled Strategic Control:**
+   - The LLM does NOT control the interview lifecycle or question strategy. Milestone 7 `QuestionPlan` strictly controls curriculum day, topic, difficulty, action, and objective. Gemini only formats the approved plan into natural spoken interviewer phrasing.
+2. **Structured Output & Zod Validation:**
+   - Uses `GeneratedQuestionSchema` (`question`, `shortIntent`, `expectedCompetency`) with JSON response schema.
+   - Strictly validates output length, content, and absence of internal metric leaks (`estimatedStrength`, `confidence`, `priorityScore`, `QuestionPlan`).
+3. **Prompt Injection Safeguards:**
+   - Candidate previous answer text is treated as untrusted data and wrapped in `<candidate_response_untrusted>` XML tags.
+   - System instructions explicitly forbid override of system instructions or topic/difficulty from candidate input.
+4. **Mandatory Fallback Generator:**
+   - Automatically activates deterministic placeholder generator (`source: "fallback"`) if `GEMINI_API_KEY` is missing, API call fails, times out, returns invalid JSON, or fails safety validation.
+   - Zero application crashes or 500 status codes when external API is unavailable.
+5. **Debug Endpoint & Test Suite:**
+   - Created `GET /api/debug/question-generator` route supporting forced fallback test query `?fallback=true`.
+   - Created `tests/question-generator.test.ts` containing 15 test cases (100% pass rate).
+
+**Files Created / Modified:**
+- `.env.example` — Environment template for `GEMINI_API_KEY` and `GEMINI_MODEL`.
+- `src/types/interview.ts` — Added `GeneratedQuestionSchema`, `GeneratedQuestion`, and `QuestionGenerationOutput`.
+- `src/lib/interview/errors.ts` — Added Gemini error codes (`GEMINI_KEY_MISSING`, `GEMINI_EMPTY_RESPONSE`, `GEMINI_API_ERROR`).
+- `src/lib/ai/gemini.ts` — Server-side `@google/genai` client helper with timeout and structured JSON response parsing.
+- `src/lib/ai/question-generator.ts` — Question generation service with Ari system persona, injection defense, safety validator, and fallback.
+- `src/app/api/debug/question-generator/route.ts` — Debug API route for live generation and forced fallback testing.
+- `tests/question-generator.test.ts` — 15-scenario verification test suite.
+- `PROMPTS.md` — Logged Milestone 8 progress.
+
 **Verification:**
-- Test suite passed 35/35 tests across `candidate-intelligence.test.ts`, `interview-state.test.ts`, and `planner.test.ts` (100% pass rate).
+- Test suite passed 50/50 tests across all 4 test suites (`candidate-intelligence.test.ts`, `interview-state.test.ts`, `planner.test.ts`, `question-generator.test.ts`).
 - `npm run lint` returned 0 errors and 0 warnings.
 - Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors.

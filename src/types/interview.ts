@@ -244,6 +244,31 @@ export type InterviewQuestion = {
   createdAt: string;
 };
 
+export const GeneratedQuestionSchema = z.object({
+  question: z.string(),
+  shortIntent: z.string(),
+  expectedCompetency: z.string().optional(),
+});
+
+export type GeneratedQuestion = z.infer<typeof GeneratedQuestionSchema>;
+
+export type QuestionGenerationOutput = {
+  question: string;
+  shortIntent: string;
+  expectedCompetency?: string;
+  source: "gemini" | "fallback";
+  model: string;
+  generatedAt: string;
+  durationMs: number;
+  plan: {
+    topic: string;
+    curriculumDay: number;
+    difficulty: DifficultyLevel;
+    action: QuestionAction;
+  };
+  fallbackReason?: string;
+};
+
 export type AnswerAssessment = {
   questionId: string;
   answer: string;

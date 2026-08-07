@@ -9,7 +9,10 @@ export type InterviewErrorCode =
   | "EMPTY_ANSWER_TEXT"
   | "MAX_QUESTIONS_EXCEEDED"
   | "INTERVIEW_FAILED"
-  | "INVALID_ASSESSMENT";
+  | "INVALID_ASSESSMENT"
+  | "GEMINI_KEY_MISSING"
+  | "GEMINI_EMPTY_RESPONSE"
+  | "GEMINI_API_ERROR";
 
 export interface InterviewStateError {
   code: InterviewErrorCode;
