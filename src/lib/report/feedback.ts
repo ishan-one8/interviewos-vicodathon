@@ -8,7 +8,6 @@ import {
 import {
   generateTextWithGemini,
   isGeminiConfigured,
-  getGeminiModelName,
   Type,
 } from "@/lib/ai/gemini";
 

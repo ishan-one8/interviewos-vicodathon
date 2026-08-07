@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     const intel = getCandidateIntelligence("CAND-003")!;
-    let state = createInterviewSession(
+    const state = createInterviewSession(
       intel.candidate,
       intel,
       `debug_rep_${scenario || "strong"}`

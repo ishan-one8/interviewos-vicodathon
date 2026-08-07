@@ -8,10 +8,10 @@ import { calculateTopicResults } from "../src/lib/report/topics";
 import { buildEvidenceBackedFindings, summarizeContradictions } from "../src/lib/report/findings";
 import { getScoreExplanation } from "../src/lib/report/explainability";
 import { generateDeterministicFeedback } from "../src/lib/report/feedback";
-import { createEmptyLedger, addTurnEvidenceToLedger, addContradictionEvidenceToLedger } from "../src/lib/interview/evidence";
+import { createEmptyLedger, addTurnEvidenceToLedger } from "../src/lib/interview/evidence";
 import { createEmptyMemory } from "../src/lib/interview/memory";
 import { getReportLevel } from "../src/lib/report/constants";
-import { InterviewState, InterviewTurn } from "../src/types/interview";
+import { InterviewState, InterviewTurn, DifficultyLevel, CompetencyDimension, CompetencyResult, ContradictionSignal } from "../src/types/interview";
 
 function createTestState(cId: string = "CAND-003", sId: string = "test_session"): InterviewState {
   const intel = getCandidateIntelligence(cId)!;
@@ -21,7 +21,7 @@ function createTestState(cId: string = "CAND-003", sId: string = "test_session")
   return state;
 }
 
-function createDummyTurn(id: string, topic: string, day: number, diff: any = "intermediate"): InterviewTurn {
+function createDummyTurn(id: string, topic: string, day: number, diff: DifficultyLevel = "intermediate"): InterviewTurn {
   return {
     question: {
       id: `q_${id}`,
@@ -30,6 +30,8 @@ function createDummyTurn(id: string, topic: string, day: number, diff: any = "in
       difficulty: diff,
       text: `Question on ${topic}`,
       action: "new_topic",
+      reasonForQuestion: "Testing coverage",
+      createdAt: new Date().toISOString(),
     },
     answer: "Sample candidate answer text.",
     assessment: {
@@ -38,16 +40,15 @@ function createDummyTurn(id: string, topic: string, day: number, diff: any = "in
       confidence: 0.9,
       strengths: [`Strong performance in ${topic}`],
       gaps: [],
-      feedback: "Good.",
     },
   };
 }
 
 describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Report Suite", () => {
   it("TEST 1: Strong evidence produces strong competency score.", async () => {
-    let state = createTestState("CAND-003", "test_1");
+    const state = createTestState("CAND-003", "test_1");
 
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: {
         id: "q_1",
         topic: "Embeddings Explained",
@@ -55,6 +56,8 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
         difficulty: "advanced",
         text: "Explain embeddings.",
         action: "new_topic",
+        reasonForQuestion: "Test",
+        createdAt: new Date().toISOString(),
       },
       answer: "Strong technical answer on HNSW embeddings.",
       assessment: {
@@ -63,20 +66,19 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
         confidence: 0.9,
         strengths: ["Demonstrated strong correctness and embeddings mastery"],
         gaps: [],
-        feedback: "Excellent.",
       },
     });
 
-    const comps = calculateCompetencyResults(state.ledger, state);
+    const comps = calculateCompetencyResults(state.ledger!);
     assert.strictEqual(comps.correctness.score, 4);
     assert.strictEqual(comps.correctness.normalizedScore, 100);
     assert.strictEqual(comps.correctness.status, "strong");
   });
 
   it("TEST 2: Weak evidence lowers competency score.", async () => {
-    let state = createTestState("CAND-003", "test_2");
+    const state = createTestState("CAND-003", "test_2");
 
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: {
         id: "q_1",
         topic: "Embeddings Explained",
@@ -84,6 +86,8 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
         difficulty: "intermediate",
         text: "Explain embeddings.",
         action: "new_topic",
+        reasonForQuestion: "Test",
+        createdAt: new Date().toISOString(),
       },
       answer: "I don't know.",
       assessment: {
@@ -92,120 +96,119 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
         confidence: 0.85,
         strengths: [],
         gaps: ["Demonstrated weak correctness and lack of understanding"],
-        feedback: "Incorrect.",
       },
     });
 
-    const comps = calculateCompetencyResults(state.ledger, state);
+    const comps = calculateCompetencyResults(state.ledger!);
     assert.strictEqual(comps.correctness.score, 0);
     assert.strictEqual(comps.correctness.normalizedScore, 0);
     assert.strictEqual(comps.correctness.status, "developing");
   });
 
   it("TEST 3: Mixed evidence aggregates sensibly.", async () => {
-    let state = createTestState("CAND-003", "test_3");
+    const state = createTestState("CAND-003", "test_3");
 
     // Turn 1: score 4
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "Vector DBs", curriculumDay: 8, difficulty: "intermediate", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "Vector DBs", curriculumDay: 8, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Good answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.8, strengths: ["Strong correctness in vector DBs"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.8, strengths: ["Strong correctness in vector DBs"], gaps: [] },
     });
 
     // Turn 2: score 2
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_2", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q2", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_2", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q2", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Partial answer",
-      assessment: { performanceSignal: "partial", scores: { correctness: 2, depth: 2, reasoning: 2, practicalUnderstanding: 2, tradeoffAwareness: 2 }, confidence: 0.8, strengths: [], gaps: ["Incorrect answer calculation in RAG"], feedback: "" },
+      assessment: { performanceSignal: "partial", scores: { correctness: 2, depth: 2, reasoning: 2, practicalUnderstanding: 2, tradeoffAwareness: 2 }, confidence: 0.8, strengths: [], gaps: ["Incorrect answer calculation in RAG"] },
     });
 
-    const comps = calculateCompetencyResults(state.ledger, state);
+    const comps = calculateCompetencyResults(state.ledger!);
     assert.ok(comps.correctness.normalizedScore > 30 && comps.correctness.normalizedScore < 95);
   });
 
   it("TEST 4: One outlier does not dominate.", async () => {
-    let state = createTestState("CAND-003", "test_4");
+    const state = createTestState("CAND-003", "test_4");
 
     // 3 strong entries
     for (let i = 1; i <= 3; i++) {
-      state.ledger = addTurnEvidenceToLedger(state.ledger, {
-        question: { id: `q_${i}`, topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: `Q${i}`, action: "new_topic" },
+      state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+        question: { id: `q_${i}`, topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: `Q${i}`, action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
         answer: "Strong answer",
-        assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: [`Strong correctness in turn ${i}`], gaps: [], feedback: "" },
+        assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: [`Strong correctness in turn ${i}`], gaps: [] },
       });
     }
 
     // 1 weak outlier
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_4", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q4", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_4", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q4", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Weak answer",
-      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.8, strengths: [], gaps: ["Weak correctness outlier"], feedback: "" },
+      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.8, strengths: [], gaps: ["Weak correctness outlier"] },
     });
 
-    const comps = calculateCompetencyResults(state.ledger, state);
+    const comps = calculateCompetencyResults(state.ledger!);
     assert.ok(comps.correctness.normalizedScore >= 70);
   });
 
   it("TEST 5: Difficulty weighting is applied correctly.", async () => {
-    let state1 = createTestState("CAND-003", "test_5a");
-    let state2 = createTestState("CAND-003", "test_5b");
+    const state1 = createTestState("CAND-003", "test_5a");
+    const state2 = createTestState("CAND-003", "test_5b");
 
     // Foundation difficulty answer
-    state1.ledger = addTurnEvidenceToLedger(state1.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "foundation", text: "Q1", action: "new_topic" },
+    state1.ledger = addTurnEvidenceToLedger(state1.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "foundation", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Correct answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Correct answer"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Correct answer"], gaps: [] },
     });
 
     // Architecture difficulty answer
-    state2.ledger = addTurnEvidenceToLedger(state2.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "architecture", text: "Q1", action: "new_topic" },
+    state2.ledger = addTurnEvidenceToLedger(state2.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "architecture", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Correct answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Correct answer"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Correct answer"], gaps: [] },
     });
 
-    const comps1 = calculateCompetencyResults(state1.ledger, state1);
-    const comps2 = calculateCompetencyResults(state2.ledger, state2);
+    const comps1 = calculateCompetencyResults(state1.ledger!);
+    const comps2 = calculateCompetencyResults(state2.ledger!);
 
     assert.strictEqual(comps1.correctness.normalizedScore, 100);
     assert.strictEqual(comps2.correctness.normalizedScore, 100);
   });
 
   it("TEST 6: Confidence affects evidence weight.", async () => {
-    let state = createTestState("CAND-003", "test_6");
+    const state = createTestState("CAND-003", "test_6");
 
     // Low confidence entry
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Answer",
-      assessment: { performanceSignal: "unclear", scores: { correctness: 2, depth: 2, reasoning: 2, practicalUnderstanding: 2, tradeoffAwareness: 2 }, confidence: 0.2, strengths: ["Unclear claim"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "unclear", scores: { correctness: 2, depth: 2, reasoning: 2, practicalUnderstanding: 2, tradeoffAwareness: 2 }, confidence: 0.2, strengths: ["Unclear claim"], gaps: [] },
     });
 
-    const comps = calculateCompetencyResults(state.ledger, state);
+    const comps = calculateCompetencyResults(state.ledger!);
     assert.ok(comps.correctness.confidence <= 0.5);
   });
 
   it("TEST 7: Insufficient evidence is not treated as zero ability.", async () => {
-    let state = createTestState("CAND-003", "test_7");
+    const state = createTestState("CAND-003", "test_7");
 
-    const comps = calculateCompetencyResults(state.ledger, state);
+    const comps = calculateCompetencyResults(state.ledger!);
     assert.strictEqual(comps.tradeoffAwareness.status, "insufficient_evidence");
     assert.strictEqual(comps.tradeoffAwareness.confidence, 0.0);
     assert.ok(comps.tradeoffAwareness.summary.includes("Insufficient interview evidence"));
   });
 
   it("TEST 8: Candidate profile prior does not affect final score.", async () => {
-    let state3 = createTestState("CAND-003", "test_8a");
-    let state4 = createTestState("CAND-004", "test_8b");
+    const state3 = createTestState("CAND-003", "test_8a");
+    const state4 = createTestState("CAND-004", "test_8b");
 
     const sharedTurnInput = {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate" as const, text: "Q1", action: "new_topic" as const },
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate" as const, text: "Q1", action: "new_topic" as const, reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Identical answer text",
-      assessment: { performanceSignal: "strong" as const, scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.8, strengths: ["Demonstrated skill"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong" as const, scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.8, strengths: ["Demonstrated skill"], gaps: [] },
     };
 
-    state3.ledger = addTurnEvidenceToLedger(state3.ledger, sharedTurnInput);
-    state4.ledger = addTurnEvidenceToLedger(state4.ledger, sharedTurnInput);
+    state3.ledger = addTurnEvidenceToLedger(state3.ledger!, sharedTurnInput);
+    state4.ledger = addTurnEvidenceToLedger(state4.ledger!, sharedTurnInput);
 
     const report3 = await buildInterviewReport({ state: state3, forceFallbackFeedback: true });
     const report4 = await buildInterviewReport({ state: state4, forceFallbackFeedback: true });
@@ -215,38 +218,38 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
   });
 
   it("TEST 9: Scores remain 0–100.", async () => {
-    let state = createTestState("CAND-003", "test_9");
+    const state = createTestState("CAND-003", "test_9");
 
-    const comps = calculateCompetencyResults(state.ledger, state);
+    const comps = calculateCompetencyResults(state.ledger!);
     for (const comp of Object.values(comps)) {
       assert.ok(comp.normalizedScore >= 0 && comp.normalizedScore <= 100);
     }
   });
 
   it("TEST 10: Confidence remains 0–1.", async () => {
-    let state = createTestState("CAND-003", "test_10");
+    const state = createTestState("CAND-003", "test_10");
 
-    const comps = calculateCompetencyResults(state.ledger, state);
+    const comps = calculateCompetencyResults(state.ledger!);
     for (const comp of Object.values(comps)) {
       assert.ok(comp.confidence >= 0.0 && comp.confidence <= 1.0);
     }
   });
 
   it("TEST 11: Overall score remains deterministic.", async () => {
-    let state1 = createTestState("CAND-003", "test_11a");
-    let state2 = createTestState("CAND-003", "test_11b");
+    const state1 = createTestState("CAND-003", "test_11a");
+    const state2 = createTestState("CAND-003", "test_11b");
 
     const turnInput = {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate" as const, text: "Q1", action: "new_topic" as const },
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate" as const, text: "Q1", action: "new_topic" as const, reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Sample answer",
-      assessment: { performanceSignal: "strong" as const, scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Sample strength"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong" as const, scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Sample strength"], gaps: [] },
     };
 
-    state1.ledger = addTurnEvidenceToLedger(state1.ledger, turnInput);
-    state2.ledger = addTurnEvidenceToLedger(state2.ledger, turnInput);
+    state1.ledger = addTurnEvidenceToLedger(state1.ledger!, turnInput);
+    state2.ledger = addTurnEvidenceToLedger(state2.ledger!, turnInput);
 
-    const overall1 = calculateOverallResult(calculateCompetencyResults(state1.ledger, state1), state1);
-    const overall2 = calculateOverallResult(calculateCompetencyResults(state2.ledger, state2), state2);
+    const overall1 = calculateOverallResult(calculateCompetencyResults(state1.ledger!), state1);
+    const overall2 = calculateOverallResult(calculateCompetencyResults(state2.ledger!), state2);
 
     assert.strictEqual(overall1.score, overall2.score);
     assert.strictEqual(overall1.confidence, overall2.confidence);
@@ -262,16 +265,16 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
   });
 
   it("TEST 13: Topic results include tested topics.", () => {
-    let state = createTestState("CAND-003", "test_13");
+    const state = createTestState("CAND-003", "test_13");
 
     state.coveredTopics = ["Embeddings Explained"];
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "Embeddings Explained", curriculumDay: 7, difficulty: "intermediate", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "Embeddings Explained", curriculumDay: 7, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["High mastery of Embeddings Explained"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["High mastery of Embeddings Explained"], gaps: [] },
     });
 
-    const topicResults = calculateTopicResults(state.ledger, state);
+    const topicResults = calculateTopicResults(state.ledger!, state);
     const testedRes = topicResults.find((t) => t.topic === "Embeddings Explained");
     assert.ok(testedRes);
     assert.strictEqual(testedRes.status, "assessed");
@@ -279,10 +282,10 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
   });
 
   it("TEST 14: Untested topics are not labeled failed.", () => {
-    let state = createTestState("CAND-003", "test_14");
+    const state = createTestState("CAND-003", "test_14");
 
     state.coveredTopics = ["Embeddings Explained"];
-    const topicResults = calculateTopicResults(state.ledger, state);
+    const topicResults = calculateTopicResults(state.ledger!, state);
     const curriculum = getCurriculum();
     const untestedTopic = curriculum.topics.find((t) => !state.coveredTopics.includes(t.topic));
     assert.ok(untestedTopic);
@@ -294,115 +297,113 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
   });
 
   it("TEST 15: Strength finding contains evidence IDs.", () => {
-    let state = createTestState("CAND-003", "test_15");
+    const state = createTestState("CAND-003", "test_15");
 
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "advanced", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "advanced", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Strong technical answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["High depth in RAG"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["High depth in RAG"], gaps: [] },
     });
 
-    const { strengths } = buildEvidenceBackedFindings(state.ledger, state);
+    const { strengths } = buildEvidenceBackedFindings(state.ledger!);
     assert.ok(strengths.length > 0);
     assert.ok(strengths[0].evidenceIds.length > 0);
   });
 
   it("TEST 16: Development area contains evidence IDs.", () => {
-    let state = createTestState("CAND-003", "test_16");
+    const state = createTestState("CAND-003", "test_16");
 
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "I don't know",
-      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.85, strengths: [], gaps: ["Gap in RAG knowledge"], feedback: "" },
+      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.85, strengths: [], gaps: ["Gap in RAG knowledge"] },
     });
 
-    const { developmentAreas } = buildEvidenceBackedFindings(state.ledger, state);
+    const { developmentAreas } = buildEvidenceBackedFindings(state.ledger!);
     assert.ok(developmentAreas.length > 0);
     assert.ok(developmentAreas[0].evidenceIds.length > 0);
   });
 
   it("TEST 17: Contradiction reduces confidence appropriately.", () => {
-    let state = createTestState("CAND-003", "test_17");
+    const state = createTestState("CAND-003", "test_17");
 
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Solid RAG concept"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Solid RAG concept"], gaps: [] },
     });
 
-    const overallClean = calculateOverallResult(calculateCompetencyResults(state.ledger, state), state);
+    const overallClean = calculateOverallResult(calculateCompetencyResults(state.ledger!), state);
 
-    state.memory.contradictionSignals = [
-      {
-        id: "cnt_1",
-        topic: "RAG",
-        claimA: { id: "c1", turnId: "t1", questionId: "q1", topic: "RAG", curriculumDay: 9, statement: "A", claimType: "concept", polarity: "supports", confidence: 0.8, source: "candidate_answer", createdAt: "" },
-        claimB: { id: "c2", turnId: "t2", questionId: "q2", topic: "RAG", curriculumDay: 9, statement: "B", claimType: "concept", polarity: "supports", confidence: 0.8, source: "candidate_answer", createdAt: "" },
-        status: "contradictory",
-        explanation: "Conflict",
-        confidence: 0.8,
-        recommendedAction: "clarify",
-        probedCount: 1,
-        resolved: false,
-      },
-    ];
+    const signal: ContradictionSignal = {
+      id: "cnt_1",
+      earlierClaimId: "c1",
+      laterClaimId: "c2",
+      topic: "RAG",
+      status: "contradictory",
+      explanation: "Conflict",
+      confidence: 0.8,
+      recommendedAction: "clarify",
+      probedCount: 1,
+      resolved: false,
+    };
+    state.memory!.contradictionSignals = [signal];
 
-    const overallConflict = calculateOverallResult(calculateCompetencyResults(state.ledger, state), state, state.memory);
+    const overallConflict = calculateOverallResult(calculateCompetencyResults(state.ledger!), state, state.memory!);
     assert.ok(overallConflict.confidence < overallClean.confidence);
   });
 
   it("TEST 18: Resolved contradiction does not unfairly penalize score.", () => {
-    let state = createTestState("CAND-003", "test_18");
+    const state = createTestState("CAND-003", "test_18");
 
-    state.memory.contradictionSignals = [
-      {
-        id: "cnt_1",
-        topic: "RAG",
-        claimA: { id: "c1", turnId: "t1", questionId: "q1", topic: "RAG", curriculumDay: 9, statement: "A", claimType: "concept", polarity: "supports", confidence: 0.8, source: "candidate_answer", createdAt: "" },
-        claimB: { id: "c2", turnId: "t2", questionId: "q2", topic: "RAG", curriculumDay: 9, statement: "B", claimType: "concept", polarity: "supports", confidence: 0.8, source: "candidate_answer", createdAt: "" },
-        status: "context_changed",
-        explanation: "Resolved",
-        confidence: 0.8,
-        recommendedAction: "ignore",
-        probedCount: 1,
-        resolved: true,
-      },
-    ];
+    const signal: ContradictionSignal = {
+      id: "cnt_1",
+      earlierClaimId: "c1",
+      laterClaimId: "c2",
+      topic: "RAG",
+      status: "context_changed",
+      explanation: "Resolved",
+      confidence: 0.8,
+      recommendedAction: "ignore",
+      probedCount: 1,
+      resolved: true,
+    };
+    state.memory!.contradictionSignals = [signal];
 
-    const summaries = summarizeContradictions(state.memory);
+    const summaries = summarizeContradictions(state.memory!);
     assert.strictEqual(summaries[0].status, "resolved");
   });
 
   it("TEST 19: Refinement can improve later evidence.", () => {
-    let state = createTestState("CAND-003", "test_19");
+    const state = createTestState("CAND-003", "test_19");
 
     // Turn 1 weak
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Weak",
-      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.8, strengths: [], gaps: ["Weak RAG initial answer"], feedback: "" },
+      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.8, strengths: [], gaps: ["Weak RAG initial answer"] },
     });
 
-    const scoreEarly = calculateCompetencyResults(state.ledger, state).correctness.score;
+    const scoreEarly = calculateCompetencyResults(state.ledger!).correctness.score;
 
     // Turn 2 strong refinement
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_2", topic: "RAG", curriculumDay: 9, difficulty: "advanced", text: "Q2", action: "clarify" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_2", topic: "RAG", curriculumDay: 9, difficulty: "advanced", text: "Q2", action: "clarify", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Strong refined answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Strong RAG refined answer"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Strong RAG refined answer"], gaps: [] },
     });
 
-    const scoreLater = calculateCompetencyResults(state.ledger, state).correctness.score;
+    const scoreLater = calculateCompetencyResults(state.ledger!).correctness.score;
     assert.ok(scoreLater > scoreEarly);
   });
 
   it("TEST 20: Evidence provenance survives into report.", async () => {
-    let state = createTestState("CAND-003", "test_20");
+    const state = createTestState("CAND-003", "test_20");
 
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_100", topic: "Vector DBs", curriculumDay: 8, difficulty: "advanced", text: "Q", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_100", topic: "Vector DBs", curriculumDay: 8, difficulty: "advanced", text: "Q", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Answer text",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Strong vector DB mastery"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Strong vector DB mastery"], gaps: [] },
     });
 
     const report = await buildInterviewReport({ state, forceFallbackFeedback: true });
@@ -410,30 +411,30 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
   });
 
   it("TEST 21: Score explanation matches aggregation inputs.", () => {
-    let state = createTestState("CAND-003", "test_21");
+    const state = createTestState("CAND-003", "test_21");
 
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Sample answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Sample strength in RAG"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Sample strength in RAG"], gaps: [] },
     });
 
-    const explanation = getScoreExplanation(state.ledger, "correctness", state);
+    const explanation = getScoreExplanation(state.ledger!, "correctness", state);
     assert.strictEqual(explanation.competency, "correctness");
     assert.strictEqual(explanation.evidenceCount, 1);
     assert.strictEqual(explanation.supportingEvidence.length, 1);
   });
 
   it("TEST 22: Gemini feedback cannot modify numeric scores.", async () => {
-    let state = createTestState("CAND-003", "test_22");
+    const state = createTestState("CAND-003", "test_22");
 
-    state.ledger = addTurnEvidenceToLedger(state.ledger, {
-      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic" },
+    state.ledger = addTurnEvidenceToLedger(state.ledger!, {
+      question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Sample answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Sample strength"], gaps: [], feedback: "" },
+      assessment: { performanceSignal: "strong", scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Sample strength"], gaps: [] },
     });
 
-    const deterministicOverall = calculateOverallResult(calculateCompetencyResults(state.ledger, state), state).score;
+    const deterministicOverall = calculateOverallResult(calculateCompetencyResults(state.ledger!), state).score;
     const report = await buildInterviewReport({ state, forceFallbackFeedback: true });
 
     assert.strictEqual(report.overall.score, deterministicOverall);
@@ -445,7 +446,7 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
       overallScore: 82,
       overallLevel: "strong",
       overallConfidence: 0.88,
-      competencies: {} as any,
+      competencies: {} as Record<CompetencyDimension, CompetencyResult>,
       strengths: [{ id: "s1", title: "RAG Deepening", description: "Good", evidenceIds: [], topics: ["RAG"], confidence: 0.9 }],
       developmentAreas: [{ id: "d1", title: "Latency trade-offs", description: "Review cost", evidenceIds: [], topics: ["RAG"], confidence: 0.8 }],
       topicResults: [],
@@ -457,7 +458,7 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
   });
 
   it("TEST 24: Report generation is idempotent.", async () => {
-    let state = createTestState("CAND-003", "test_24");
+    const state = createTestState("CAND-003", "test_24");
 
     const report1 = await buildInterviewReport({ state, forceFallbackFeedback: true });
     const report2 = await buildInterviewReport({ state, forceFallbackFeedback: true });
@@ -468,7 +469,7 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
   });
 
   it("TEST 25: Provisional report clearly marked incomplete.", async () => {
-    let state = createTestState("CAND-003", "test_25");
+    const state = createTestState("CAND-003", "test_25");
 
     state.questionCount = 3;
     const report = await buildInterviewReport({ state, forceFallbackFeedback: true });
@@ -477,7 +478,7 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
   });
 
   it("TEST 26: Completed interview produces final report.", async () => {
-    let state = createTestState("CAND-003", "test_26");
+    const state = createTestState("CAND-003", "test_26");
 
     state.questionCount = 8;
     state.coveredCurriculumDays = [7, 8, 9, 10];

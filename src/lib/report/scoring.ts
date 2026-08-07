@@ -21,8 +21,7 @@ const ALL_COMPETENCIES: CompetencyDimension[] = [
 ];
 
 export function calculateCompetencyResults(
-  ledger: EvidenceLedger,
-  state: InterviewState
+  ledger: EvidenceLedger
 ): Record<CompetencyDimension, CompetencyResult> {
   const results = {} as Record<CompetencyDimension, CompetencyResult>;
 

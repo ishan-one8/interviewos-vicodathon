@@ -1,15 +1,11 @@
 import {
   EvidenceLedger,
-  InterviewState,
   InterviewMemory,
   ReportFinding,
   ReportContradictionSummary,
 } from "@/types/interview";
 
-export function buildEvidenceBackedFindings(
-  ledger: EvidenceLedger,
-  state: InterviewState
-): {
+export function buildEvidenceBackedFindings(ledger: EvidenceLedger): {
   strengths: ReportFinding[];
   developmentAreas: ReportFinding[];
 } {

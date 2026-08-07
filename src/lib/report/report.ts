@@ -31,13 +31,12 @@ export async function buildInterviewReport(input: {
     requirementsSatisfied: isFinal,
   };
 
-  const competencies = calculateCompetencyResults(state.ledger, state);
+  const competencies = calculateCompetencyResults(state.ledger);
   const overall = calculateOverallResult(competencies, state, state.memory);
   const topicResults = calculateTopicResults(state.ledger, state);
 
   const { strengths, developmentAreas } = buildEvidenceBackedFindings(
-    state.ledger,
-    state
+    state.ledger
   );
 
   const contradictions = summarizeContradictions(state.memory);
