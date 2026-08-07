@@ -112,8 +112,8 @@ export function summarizeContradictions(
     return {
       id: c.id || `rep_cnt_${idx + 1}`,
       topic: c.topic,
-      statementA: c.claimA?.statement || "Initial claim",
-      statementB: c.claimB?.statement || "Subsequent claim",
+      statementA: `Earlier claim (${c.earlierClaimId || "c1"})`,
+      statementB: `Later claim (${c.laterClaimId || "c2"})`,
       status,
       explanation,
     };

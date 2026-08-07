@@ -367,3 +367,70 @@ Build the final deterministic competency scoring engine (`scoring.ts`), evidence
 - `npm test`: 196 / 196 tests passing across all 10 test suites (`candidate-intelligence`, `interview-state`, `planner`, `question-generator`, `answer-evaluator`, `memory`, `evidence`, `orchestrator`, `report`, `contract`).
 - `npm run lint`: 0 errors, 0 warnings.
 - `npm run build`: Next.js production build compiled cleanly across 17 static & dynamic routes.
+
+---
+
+### Milestone 15 — Premium Candidate Interview UI, Lobby, Live Experience & Micro-Interactions
+
+**Tool:** Google Antigravity
+**Goal:** Build a serious, high-end candidate-facing adaptive interview interface (`/interview`), interview lobby, Ari interviewer identity, live technical question presenter, answer composer, progress tracking, calm error handling, and completion screen.
+
+**Design System & Architectural Decisions:**
+1. **Design System & Visual Language:**
+   - Palette: Near-black/deep graphite (`#09090b`), subtle charcoal elevated surfaces (`#121215`), border overlays, refined indigo accent (`#6366f1`), cool cyan secondary, warm white hierarchy.
+   - Inspired by modern developer tools (Linear, Raycast, Vercel) while maintaining an original identity.
+2. **Product Shell & Navigation (`ProductShell`):**
+   - Clean top navigation with "InterviewOS" wordmark, "Adaptive AI Technical Interviewer" badge, live system status, and "Start Interview" CTA.
+3. **Homepage Upgrade (`src/app/page.tsx`):**
+   - Truthful hero headline: *"An interview that thinks between your answers."*
+   - Hero visual: Product-native SVG/CSS animated pipeline diagram (Candidate Context $\rightarrow$ Question Strategy $\rightarrow$ Live Answer $\rightarrow$ Adaptive Follow-up).
+   - 4-step Product Proof section and System Guarantees section.
+   - Frictionless demo mode: Start Interview $\rightarrow$ Lobby $\rightarrow$ Live evaluation in under 30 seconds.
+4. **Interview Lobby & Candidate Selector (`CandidateSelector`):**
+   - Displays official candidates from `candidates.json` (e.g. Emily Chen, David Miller).
+   - Displays candidate name, target role, years of experience, and education.
+   - Strictly **zero leakage** of hidden skill hypotheses, estimated strength scores, or weakness classifications.
+   - Ari interviewer identity preview and reassurance: *"Your answers influence the questions that follow."*
+5. **Ari Interviewer Identity (`InterviewerIdentity`):**
+   - Senior AI Systems Engineer persona, calm, focused, and professional.
+   - Abstract technical orbit/signal SVG mark with pulsating live state indicator (zero faces/cartoons).
+6. **Live Question Card & Adaptive Follow-up UX (`QuestionCard`):**
+   - Question number, Ari avatar, and question text formatted with high readability.
+   - Safe metadata tags: Topic ("Embeddings & Vector Search"), Difficulty ("Advanced").
+   - Adaptive follow-up badge: `BUILDING ON PREVIOUS ANSWER` appears when planner deepens or probes.
+   - Contextual transition badge: `Transitioning topic focus to: ...` appears when switching topics.
+7. **Answer Composer (`AnswerComposer`):**
+   - Textarea with smooth focus state, character count indicator, and `Cmd+Enter` keyboard shortcut.
+   - Double-submission lock and state protection.
+   - Answer preservation on network error so typed text is never lost.
+8. **Calm Processing & Error States (`ProcessingState`, `InterviewError`):**
+   - Processing shimmer: *"Ari is evaluating your reasoning & preparing next question..."*
+   - Calm error banner: *"We couldn't process that response yet. Your answer is preserved — try submitting again."* (Zero internal stack trace or LLM key leakage).
+9. **Completion Screen (`CompletionState`):**
+   - Renders upon session completion: "Technical Interview Complete".
+   - Summary metrics (questions answered, curriculum areas covered).
+   - CTA button: `View Interview Report` (`/report?sessionId=...`).
+10. **Test Suite & Verification (`tests/ui.test.ts`):**
+    - Added UI security and candidate privacy tests verifying candidates dataset loading, zero internal score leakage, candidate snapshot redaction, and question metadata safety.
+    - All 201 tests across 11 test suites passing 100%.
+
+**Files Created / Modified:**
+- `src/components/ui/ProductShell.tsx` — Global header, descriptor, and footer shell.
+- `src/components/interview/InterviewerIdentity.tsx` — Ari interviewer identity component with orbit mark.
+- `src/components/interview/CandidateSelector.tsx` — Interview lobby candidate selection cards.
+- `src/components/interview/QuestionCard.tsx` — Live technical question presentation component.
+- `src/components/interview/AnswerComposer.tsx` — Answer composer with character count & keyboard shortcut.
+- `src/components/interview/InterviewProgress.tsx` — Session progress bar and explored topics list.
+- `src/components/interview/ProcessingState.tsx` — Answer submission loading shimmer.
+- `src/components/interview/InterviewError.tsx` — Candidate-facing error banner.
+- `src/components/interview/CompletionState.tsx` — Interview completion summary screen.
+- `src/app/interview/page.tsx` — Main interactive interview lobby & live evaluation page controller.
+- `src/app/page.tsx` — Upgraded homepage with hero pipeline visualization and capabilities.
+- `tests/ui.test.ts` — 5-scenario UI security and candidate privacy test suite.
+- `PROMPTS.md` — Appended Milestone 15 execution log.
+
+**Verification:**
+- `npm run lint`: **0 errors, 0 warnings**.
+- `npm test`: **201 / 201 tests passing** across 11 test suites.
+- `npm run build`: Next.js production build compiled cleanly across 18 static & dynamic routes.
+

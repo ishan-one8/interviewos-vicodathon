@@ -1,6 +1,5 @@
 import {
   EvidenceLedger,
-  InterviewState,
   CompetencyDimension,
   ScoreExplanation,
 } from "@/types/interview";
@@ -9,10 +8,9 @@ import { DIFFICULTY_WEIGHTS } from "./constants";
 
 export function getScoreExplanation(
   ledger: EvidenceLedger,
-  dimension: CompetencyDimension,
-  state: InterviewState
+  dimension: CompetencyDimension
 ): ScoreExplanation {
-  const competencyResults = calculateCompetencyResults(ledger, state);
+  const competencyResults = calculateCompetencyResults(ledger);
   const comp = competencyResults[dimension];
 
   const entries = ledger.entries.filter((e) => e.competency === dimension);
@@ -38,26 +36,25 @@ export function getScoreExplanation(
     const entry = sortedEntries[i];
     const scoreVal = entry.score ?? 2.0;
     const diffWeight = DIFFICULTY_WEIGHTS[entry.difficulty] || 1.0;
-    const recencyMultiplier = 1.0 + i * 0.05;
-    const weight = Number((entry.confidence * diffWeight * recencyMultiplier).toFixed(2));
 
     const item = {
       evidenceId: entry.id,
       statement: entry.observation,
       score: scoreVal,
-      weight,
+      weight: diffWeight,
     };
 
-    if (scoreVal >= 2.5) {
+    if (entry.type === "strength") {
       supportingEvidence.push(item);
     } else {
       gapEvidence.push(item);
     }
   }
 
-  const weightingSummary = entries.length === 0
-    ? `No evidence entries recorded for ${dimension}. Status is marked insufficient_evidence.`
-    : `Score computed from ${entries.length} evidence entry/entries using formula: WeightedAverage = Sum(score * confidence * difficultyWeight) / Sum(weights). Difficulty multipliers applied: ${Array.from(new Set(entries.map((e) => `${e.difficulty}:${DIFFICULTY_WEIGHTS[e.difficulty] || 1.0}`))).join(", ")}.`;
+  const weightingSummary =
+    entries.length === 0
+      ? `No evidence recorded for ${dimension}. Competency marked as insufficient_evidence with 0.0 confidence.`
+      : `Score computed by taking difficulty-weighted average of ${entries.length} evidence entries (${supportingEvidence.length} supporting, ${gapEvidence.length} gaps).`;
 
   return {
     competency: dimension,
@@ -65,7 +62,7 @@ export function getScoreExplanation(
     normalizedScore: comp.normalizedScore,
     confidence: comp.confidence,
     status: comp.status,
-    evidenceCount: comp.evidenceCount,
+    evidenceCount: entries.length,
     supportingEvidence,
     gapEvidence,
     weightingSummary,

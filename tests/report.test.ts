@@ -490,7 +490,7 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
       }),
     });
 
-    const explanation = getScoreExplanation(state.ledger!, "correctness", state);
+    const explanation = getScoreExplanation(state.ledger!, "correctness");
     assert.strictEqual(explanation.competency, "correctness");
     assert.strictEqual(explanation.evidenceCount, 1);
     assert.strictEqual(explanation.supportingEvidence.length, 1);

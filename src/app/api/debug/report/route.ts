@@ -4,10 +4,8 @@ import { createInterviewSession } from "@/lib/interview/state";
 import { buildInterviewReport } from "@/lib/report/report";
 import { getScoreExplanation } from "@/lib/report/explainability";
 import { defaultSessionRepository } from "@/lib/interview/session-repository";
-import {
-  addTurnEvidenceToLedger,
-  addContradictionEvidenceToLedger,
-} from "@/lib/interview/evidence";
+import { createEmptyLedger, addTurnEvidenceToLedger } from "@/lib/interview/evidence";
+import { createEmptyMemory } from "@/lib/interview/memory";
 import { CompetencyDimension } from "@/types/interview";
 
 export async function GET(request: NextRequest) {
@@ -25,10 +23,11 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      const ledger = state.ledger || createEmptyLedger(state.sessionId);
       const report = await buildInterviewReport({ state });
       const explanations = (
         ["correctness", "depth", "reasoning", "practicalUnderstanding", "tradeoffAwareness"] as CompetencyDimension[]
-      ).map((dim) => getScoreExplanation(state.ledger, dim, state));
+      ).map((dim) => getScoreExplanation(ledger, dim));
 
       return NextResponse.json({
         report,
@@ -42,6 +41,8 @@ export async function GET(request: NextRequest) {
       intel,
       `debug_rep_${scenario || "strong"}`
     );
+    state.ledger = createEmptyLedger(state.sessionId);
+    state.memory = createEmptyMemory();
 
     if (scenario === "insufficient-evidence") {
       // Only 1 turn executed
@@ -56,15 +57,23 @@ export async function GET(request: NextRequest) {
           difficulty: "intermediate",
           text: "Explain embeddings.",
           action: "new_topic",
+          reasonForQuestion: "Debug",
+          createdAt: new Date().toISOString(),
         },
         answer: "Embeddings turn text into high-dimensional vectors.",
         assessment: {
+          questionId: "q_1",
+          answer: "Embeddings turn text into high-dimensional vectors.",
           performanceSignal: "strong",
           scores: { correctness: 4, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 },
           confidence: 0.9,
           strengths: ["Clear definition"],
           gaps: [],
-          feedback: "Good answer.",
+          contradictions: [],
+          evidence: [],
+          summary: "Good answer.",
+          recommendedAction: "new_topic",
+          recommendedDifficulty: "intermediate",
         },
       });
     } else if (scenario === "contradiction") {
@@ -80,94 +89,45 @@ export async function GET(request: NextRequest) {
         {
           id: "cnt_1",
           topic: "Hybrid Search & Reranking",
-          claimA: {
-            id: "cl_1",
-            turnId: "turn_1",
-            questionId: "q_1",
-            topic: "Hybrid Search & Reranking",
-            curriculumDay: 10,
-            statement: "Reranking is never necessary when vector embeddings are fine-tuned.",
-            claimType: "design_choice",
-            polarity: "supports",
-            confidence: 0.85,
-            source: "candidate_answer",
-            createdAt: new Date().toISOString(),
-          },
-          claimB: {
-            id: "cl_2",
-            turnId: "turn_6",
-            questionId: "q_6",
-            topic: "Hybrid Search & Reranking",
-            curriculumDay: 10,
-            statement: "Reranking is strictly essential for high precision in all production RAG systems.",
-            claimType: "design_choice",
-            polarity: "supports",
-            confidence: 0.9,
-            source: "candidate_answer",
-            createdAt: new Date().toISOString(),
-          },
+          earlierClaimId: "cl_1",
+          laterClaimId: "cl_2",
           status: "contradictory",
-          explanation: "Candidate claimed reranking is never needed, but later claimed it is strictly essential.",
+          explanation: "Conflict on reranking efficiency",
           confidence: 0.85,
-          recommendedAction: "clarify",
+          recommendedAction: "challenge",
           probedCount: 1,
           resolved: false,
         },
       ];
-      state.ledger = addContradictionEvidenceToLedger(
-        state.ledger,
-        state.memory.contradictionSignals[0],
-        "q_6",
-        "turn_6"
-      );
-    } else if (scenario === "refinement") {
-      state.coveredCurriculumDays = [7, 8, 9, 10];
-      state.coveredTopics = [
-        "Embeddings Explained",
-        "Vector Databases",
-        "RAG Architectures",
-        "Hybrid Search & Reranking",
-      ];
-      state.questionCount = 8;
-      state.memory.contradictionSignals = [
-        {
-          id: "cnt_1",
+      state.ledger = addTurnEvidenceToLedger(state.ledger, {
+        question: {
+          id: "q_1",
           topic: "Hybrid Search & Reranking",
-          claimA: {
-            id: "cl_1",
-            turnId: "turn_1",
-            questionId: "q_1",
-            topic: "Hybrid Search & Reranking",
-            curriculumDay: 10,
-            statement: "Reranking is unnecessary.",
-            claimType: "design_choice",
-            polarity: "supports",
-            confidence: 0.85,
-            source: "candidate_answer",
-            createdAt: new Date().toISOString(),
-          },
-          claimB: {
-            id: "cl_2",
-            turnId: "turn_6",
-            questionId: "q_6",
-            topic: "Hybrid Search & Reranking",
-            curriculumDay: 10,
-            statement: "Reranking is essential for cross-encoder scoring when initial recall vector top-k is large.",
-            claimType: "design_choice",
-            polarity: "supports",
-            confidence: 0.9,
-            source: "candidate_answer",
-            createdAt: new Date().toISOString(),
-          },
-          status: "context_changed",
-          explanation: "Candidate clarified that reranking is specifically needed when vector recall top-k is large.",
-          confidence: 0.9,
-          recommendedAction: "ignore",
-          probedCount: 1,
-          resolved: true,
+          curriculumDay: 10,
+          difficulty: "advanced",
+          text: "Explain reranking.",
+          action: "new_topic",
+          reasonForQuestion: "Debug",
+          createdAt: new Date().toISOString(),
         },
-      ];
-    } else if (scenario === "mixed") {
+        answer: "Reranking is great.",
+        assessment: {
+          questionId: "q_1",
+          answer: "Reranking is great.",
+          performanceSignal: "strong",
+          scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 },
+          confidence: 0.85,
+          strengths: ["Solid understanding"],
+          gaps: [],
+          contradictions: [],
+          evidence: [],
+          summary: "Solid.",
+          recommendedAction: "new_topic",
+          recommendedDifficulty: "intermediate",
+        },
+      });
+    } else {
+      // Default strong scenario
       state.coveredCurriculumDays = [7, 8, 9, 10];
       state.coveredTopics = [
         "Embeddings Explained",
@@ -176,66 +136,33 @@ export async function GET(request: NextRequest) {
         "Hybrid Search & Reranking",
       ];
       state.questionCount = 8;
-      // Add mixed assessments
       state.ledger = addTurnEvidenceToLedger(state.ledger, {
         question: {
           id: "q_1",
           topic: "Embeddings Explained",
           curriculumDay: 7,
-          difficulty: "intermediate",
-          text: "Explain embeddings.",
+          difficulty: "advanced",
+          text: "Explain HNSW indexing.",
           action: "new_topic",
+          reasonForQuestion: "Debug",
+          createdAt: new Date().toISOString(),
         },
-        answer: "Embeddings map text to vectors.",
+        answer: "Detailed answer on graph indexing.",
         assessment: {
-          performanceSignal: "partial",
-          scores: { correctness: 3, depth: 2, reasoning: 3, practicalUnderstanding: 2, tradeoffAwareness: 1 },
-          confidence: 0.8,
-          strengths: ["Basic definition"],
-          gaps: ["Lacks trade-off awareness"],
-          feedback: "Partial answer.",
+          questionId: "q_1",
+          answer: "Detailed answer on graph indexing.",
+          performanceSignal: "strong",
+          scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 },
+          confidence: 0.9,
+          strengths: ["Deep understanding of HNSW graph construction"],
+          gaps: [],
+          contradictions: [],
+          evidence: [],
+          summary: "Strong candidate answer.",
+          recommendedAction: "deepen",
+          recommendedDifficulty: "advanced",
         },
       });
-    } else {
-      // Default: Strong scenario
-      state.coveredCurriculumDays = [7, 8, 9, 10];
-      state.coveredTopics = [
-        "Embeddings Explained",
-        "Vector Databases",
-        "RAG Architectures",
-        "Hybrid Search & Reranking",
-      ];
-      state.questionCount = 8;
-
-      const topicsList = [
-        { day: 7, topic: "Embeddings Explained" },
-        { day: 8, topic: "Vector Databases" },
-        { day: 9, topic: "RAG Architectures" },
-        { day: 10, topic: "Hybrid Search & Reranking" },
-      ];
-
-      for (let i = 0; i < 8; i++) {
-        const top = topicsList[i % topicsList.length];
-        state.ledger = addTurnEvidenceToLedger(state.ledger, {
-          question: {
-            id: `q_${i + 1}`,
-            topic: top.topic,
-            curriculumDay: top.day,
-            difficulty: "advanced",
-            text: `Deep question on ${top.topic}`,
-            action: "new_topic",
-          },
-          answer: `Strong technical answer explaining HNSW index parameters M and efConstruction for ${top.topic}.`,
-          assessment: {
-            performanceSignal: "strong",
-            scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 3 },
-            confidence: 0.9,
-            strengths: [`High mastery of ${top.topic}`],
-            gaps: [],
-            feedback: "Strong technical answer.",
-          },
-        });
-      }
     }
 
     const report = await buildInterviewReport({
@@ -244,17 +171,20 @@ export async function GET(request: NextRequest) {
       forceFallbackFeedback: true,
     });
 
+    const ledger = state.ledger || createEmptyLedger(state.sessionId);
     const explanations = (
       ["correctness", "depth", "reasoning", "practicalUnderstanding", "tradeoffAwareness"] as CompetencyDimension[]
-    ).map((dim) => getScoreExplanation(state.ledger, dim, state));
+    ).map((dim) => getScoreExplanation(ledger, dim));
 
     return NextResponse.json({
-      scenario: scenario || "strong",
       report,
       scoreExplanations: explanations,
     });
-  } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : "Report generation error";
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+  } catch (error) {
+    console.error("Debug report generation error:", error);
+    return NextResponse.json(
+      { error: "Failed to generate debug report", details: String(error) },
+      { status: 500 }
+    );
   }
 }

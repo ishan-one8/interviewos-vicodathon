@@ -3,6 +3,8 @@ import {
   InterviewReport,
 } from "@/types/interview";
 import { canCompleteInterview } from "@/lib/interview/selectors";
+import { createEmptyLedger } from "@/lib/interview/evidence";
+import { createEmptyMemory } from "@/lib/interview/memory";
 import {
   calculateCompetencyResults,
   calculateOverallResult,
@@ -20,7 +22,8 @@ export async function buildInterviewReport(input: {
   forceFallbackFeedback?: boolean;
 }): Promise<InterviewReport> {
   const { state, forceFallbackFeedback } = input;
-  const candidateName = input.candidateName || state.candidateId || "Candidate";
+  const candidateId = state.candidate ? state.candidate.id : "CAND-001";
+  const candidateName = input.candidateName || state.candidate?.name || "Candidate";
 
   const isFinal = canCompleteInterview(state);
   const reportStatus = isFinal ? "final" : "provisional";
@@ -31,15 +34,18 @@ export async function buildInterviewReport(input: {
     requirementsSatisfied: isFinal,
   };
 
-  const competencies = calculateCompetencyResults(state.ledger);
-  const overall = calculateOverallResult(competencies, state, state.memory);
-  const topicResults = calculateTopicResults(state.ledger, state);
+  const ledger = state.ledger || createEmptyLedger(state.sessionId);
+  const memory = state.memory || createEmptyMemory();
+
+  const competencies = calculateCompetencyResults(ledger);
+  const overall = calculateOverallResult(competencies, state, memory);
+  const topicResults = calculateTopicResults(ledger, state);
 
   const { strengths, developmentAreas } = buildEvidenceBackedFindings(
-    state.ledger
+    ledger
   );
 
-  const contradictions = summarizeContradictions(state.memory);
+  const contradictions = summarizeContradictions(memory);
 
   const feedback = await generateReportFeedback({
     candidateName,
@@ -55,7 +61,7 @@ export async function buildInterviewReport(input: {
 
   return {
     sessionId: state.sessionId,
-    candidateId: state.candidateId,
+    candidateId,
     candidateName,
     reportStatus,
     completion,

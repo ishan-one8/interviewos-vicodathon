@@ -4,6 +4,7 @@ import {
   CandidateInterviewSnapshot,
   InternalInterviewSnapshot,
   InterviewEvent,
+  QuestionPlan,
 } from "@/types/interview";
 import { getCandidateIntelligence, getCurriculum } from "@/lib/data";
 import { createInterviewSession } from "@/lib/interview/state";
@@ -423,7 +424,8 @@ export async function finishInterviewSession(
   });
   pushEvent(sessionId, compEvt);
 
-  const intel = getCandidateIntelligence(state.candidate?.id || state.candidateId);
+  const candId = state.candidate ? state.candidate.id : "";
+  const intel = getCandidateIntelligence(candId);
   const report = await buildInterviewReport({
     state,
     candidateName: intel?.candidate?.name || state.candidate?.name,
