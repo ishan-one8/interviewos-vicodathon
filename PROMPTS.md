@@ -35,6 +35,37 @@ Establish a reliable data foundation using official hackathon dataset files (`cu
 - `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css` — Standardized Next.js App Router setup inside `src/app/`.
 - `PROMPTS.md` — Logged Milestone 4 progress.
 
+---
+
+## Milestone 5 — Candidate Intelligence Engine
+
+**Assisted by:** Google Antigravity (Gemini 3.6 Flash)
+
+**Goal:**
+Build a deterministic, fair, evidence-backed Candidate Intelligence Engine on top of the Milestone 4 data foundation that calculates skill hypotheses, exposure levels, confidence scores, interview priorities, and starting difficulty recommendations without LLM overhead or non-deterministic variance.
+
+**Architectural Decisions:**
+1. **Deterministic Pure Function Profiling:**
+   - Designed `profileCandidate(candidate, curriculum)` as a pure function in `src/lib/candidate/profiler.ts`.
+   - Every curriculum topic receives an explicit `SkillHypothesis` containing `estimatedStrength` (0..1), `confidence` (0..1), `exposure`, `interviewPriority`, `recommendedDifficulty`, `isSkipped`, `attemptsCount`, and readable `evidence`.
+2. **Fairness Rules for Skipped & Missing Data:**
+   - Skipped topics are assigned `interviewPriority: "avoid"` and `isSkipped: true` without penalizing overall completed topic mastery scores.
+   - Missing optional fields default safely without throwing exceptions or returning `NaN`.
+3. **Attempt Penalties & Verification Tagging:**
+   - 1-attempt mission passes receive a strength credit (+0.15).
+   - $\ge 3$-attempt passes are tagged as struggle topics with `interviewPriority: "high"` and `recommendedDifficulty: "debugging"`, placing them into `topicsToVerify`.
+4. **Debug API Endpoint & Automated Test Suite:**
+   - Created `GET /api/debug/profile?candidateId=<id>` route.
+   - Built automated test suite `tests/candidate-intelligence.test.ts` covering strong candidates, retry-heavy candidates, skipped topic candidates, missing data edge cases, and 100% determinism verification.
+
+**Files Created / Modified:**
+- `src/types/interview.ts` — Added `SeniorityTier`, `InterviewPriority`, `SkillHypothesis`, and `CandidateIntelligenceReport` interfaces.
+- `src/lib/candidate/profiler.ts` — Implemented deterministic scoring, seniority classification, topic prioritization, and evidence compiler.
+- `src/lib/data.ts` — Added `getCandidateIntelligence(candidateId)` helper.
+- `src/app/api/debug/profile/route.ts` — Created `GET /api/debug/profile` route.
+- `tests/candidate-intelligence.test.ts` — Automated unit/integration test suite.
+- `PROMPTS.md` — Logged Milestone 5 progress.
+
 **Verification:**
-- Successfully built project with `npm run build` (0 TypeScript / Next.js compilation errors).
-- Validated `GET /api/debug/data` returning 31 curriculum topics and 20 candidates.
+- Test suite passed 5/5 tests (100% pass rate).
+- Production build `npm run build` succeeded with zero TypeScript or Next.js errors.

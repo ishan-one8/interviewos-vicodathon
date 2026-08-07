@@ -25,6 +25,18 @@ export type InterviewStatus =
   | "interviewing"
   | "completed";
 
+export type InterviewPriority =
+  | "high"
+  | "medium"
+  | "low"
+  | "avoid";
+
+export type SeniorityTier =
+  | "junior"
+  | "mid"
+  | "senior"
+  | "principal";
+
 // ==========================================
 // 2. Raw Organizer JSON Schemas (Zod)
 // ==========================================
@@ -144,10 +156,30 @@ export type CandidateProfile = {
 export type SkillHypothesis = {
   topic: string;
   curriculumDay: number;
+  moduleTitle: string;
   exposure: "none" | "low" | "medium" | "high";
   estimatedStrength: number; // 0..1
   confidence: number; // 0..1
+  interviewPriority: InterviewPriority;
+  recommendedDifficulty: DifficultyLevel;
+  isSkipped: boolean;
+  attemptsCount: number;
   evidence: string[];
+};
+
+export type CandidateIntelligenceReport = {
+  candidate: CandidateProfile;
+  skillMap: SkillHypothesis[];
+  overallSkillEstimate: number; // 0..1
+  overallConfidence: number; // 0..1
+  seniorityTier: SeniorityTier;
+  recommendedStartingDifficulty: DifficultyLevel;
+  strongestTopics: SkillHypothesis[];
+  topicsToVerify: SkillHypothesis[];
+  lowExposureTopics: SkillHypothesis[];
+  skippedTopics: SkillHypothesis[];
+  suggestedStartingTopics: SkillHypothesis[];
+  summaryNotes: string[];
 };
 
 export type CompetencyScore = {
