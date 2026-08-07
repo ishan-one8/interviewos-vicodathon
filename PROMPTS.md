@@ -100,7 +100,42 @@ Build a pure, deterministic Interview State Machine and hard hackathon coverage 
 - `tests/interview-state.test.ts` — Comprehensive 14-test verification suite.
 - `PROMPTS.md` — Logged Milestone 6 progress.
 
+---
+
+## Milestone 7 — Adaptive Question Planner & Interview Strategy Engine
+
+**Assisted by:** Google Antigravity (Gemini 3.6 Flash)
+
+**Goal:**
+Build a deterministic Adaptive Question Planner and Strategy Engine (`planNextQuestion`) that evaluates candidate intelligence, interview state, coverage guardrails, and performance signals to generate a transparent, evidence-backed `QuestionPlan` describing *WHAT* to test, *WHICH* curriculum day to cover, *WHAT* difficulty to use, and *WHY*.
+
+**Architectural Decisions:**
+1. **Deterministic Topic Scoring & Ranking:**
+   - Implemented pure scoring heuristics in `src/lib/interview/planner-scoring.ts`.
+   - Incorporates completed day bonuses (+30), verification bonuses for retry-heavy topics (+40), module diversity (+15), and coverage rescue priorities (+85).
+   - Enforces deterministic tie-breaking (priority score desc -> confidence desc -> day number asc -> topic title asc).
+2. **Three Interview Phases & Strategic Adaptation:**
+   - Evaluates `phase`: Calibration (Q1–3), Deepening (Q4–7), and Coverage/Closing (Q8+).
+   - Recommends difficulty progression (`foundation` -> `intermediate` -> `advanced` -> `debugging` -> `architecture` -> `tradeoff`).
+   - Adapts to optional performance signals (`strong` -> escalate, `weak` -> lower, `partial`/`unclear` -> clarify, `contradictory` -> challenge).
+3. **Coverage Rescue Mode & Skipped Topic Fairness:**
+   - Activates `coverage_rescue` mode if unique curriculum days $< 4$ when approaching `MAX_QUESTIONS = 12` or $\ge 7$ questions asked.
+   - Enforces fairness for skipped topics (penalized by -100 so they are not selected first or forced unfairly for coverage).
+4. **Debug Endpoint & Test Suite:**
+   - Created `GET /api/debug/planner` route for inspecting multi-turn planning simulations and coverage rescue scenarios.
+   - Built comprehensive automated test suite `tests/planner.test.ts` with 16 explicit test cases (all passing).
+
+**Files Created / Modified:**
+- `src/types/interview.ts` — Added `QuestionPlan`, `PerformanceSignal`, `InterviewPhase`, and `SelectionMode`.
+- `src/lib/interview/planner-policy.ts` — Phase determination, difficulty recommendations, action selection, and objective generation.
+- `src/lib/interview/planner-scoring.ts` — Deterministic topic scoring, weighting heuristics, and tie-breaking.
+- `src/lib/interview/question-template.ts` — Deterministic debug placeholder question generator.
+- `src/lib/interview/planner.ts` — Main `planNextQuestion` strategy engine entry point.
+- `src/app/api/debug/planner/route.ts` — Debug simulation API route.
+- `tests/planner.test.ts` — 16-scenario verification test suite.
+- `PROMPTS.md` — Logged Milestone 7 progress.
+
 **Verification:**
-- Test suite passed 19/19 tests across `candidate-intelligence.test.ts` and `interview-state.test.ts` (100% pass rate).
+- Test suite passed 35/35 tests across `candidate-intelligence.test.ts`, `interview-state.test.ts`, and `planner.test.ts` (100% pass rate).
 - `npm run lint` returned 0 errors and 0 warnings.
-- Production build `npm run build` completed successfully with zero TypeScript or Next.js errors.
+- Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors.

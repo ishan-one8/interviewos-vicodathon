@@ -38,6 +38,26 @@ export type SeniorityTier =
   | "senior"
   | "principal";
 
+export type PerformanceSignal =
+  | "strong"
+  | "partial"
+  | "weak"
+  | "unclear"
+  | "contradictory";
+
+export type InterviewPhase =
+  | "calibration"
+  | "deepening"
+  | "coverage"
+  | "closing";
+
+export type SelectionMode =
+  | "candidate_strength"
+  | "verification"
+  | "coverage_rescue"
+  | "adaptive_followup"
+  | "diversity";
+
 // ==========================================
 // 2. Raw Organizer JSON Schemas (Zod)
 // ==========================================
@@ -181,6 +201,27 @@ export type CandidateIntelligenceReport = {
   skippedTopics: SkillHypothesis[];
   suggestedStartingTopics: SkillHypothesis[];
   summaryNotes: string[];
+};
+
+export type QuestionPlan = {
+  topicId: string;
+  topic: string;
+  curriculumDay: number;
+  moduleTitle: string;
+  difficulty: DifficultyLevel;
+  action: QuestionAction;
+  objective: string;
+  reasonForSelection: string;
+  candidateEvidence: string[];
+  plannerSignals: string[];
+  basedOnQuestionId?: string;
+  coverageImpact: {
+    addsNewCurriculumDay: boolean;
+    uniqueDaysAfterQuestion: number;
+  };
+  priorityScore: number;
+  phase: InterviewPhase;
+  selectionMode: SelectionMode;
 };
 
 export type CompetencyScore = {
