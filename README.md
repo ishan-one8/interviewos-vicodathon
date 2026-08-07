@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InterviewOS — AI Technical Interview Agent
 
-## Getting Started
+InterviewOS is an autonomous, adaptive AI technical interview agent designed for the ViCodathon 2026 Hackathon.
 
-First, run the development server:
+## Official Hackathon HTTP API
 
+### Endpoints
+- `POST /api/interview` (Primary)
+- `POST /api/agent` (Alias)
+
+### Initialize New Interview Session
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+curl -X POST http://localhost:3000/api/interview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "candidateId": "CAND-003"
+  }'
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Response Example (Active):**
+```json
+{
+  "sessionId": "session_CAND-003_1770416863",
+  "status": "active",
+  "turnCount": 1,
+  "coveredCurriculumDays": [7],
+  "coveredTopics": ["Embeddings Explained"],
+  "question": {
+    "id": "q_CAND-003_1770416863_b5y07",
+    "text": "What is the primary trade-off when configuring HNSW index parameters M and efConstruction?",
+    "topic": "Embeddings Explained",
+    "curriculumDay": 7,
+    "difficulty": "advanced"
+  },
+  "report": null
+}
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Continue Interview Session (Submit Candidate Answer)
+```bash
+curl -X POST http://localhost:3000/api/interview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "session_CAND-003_1770416863",
+    "questionId": "q_CAND-003_1770416863_b5y07",
+    "answer": "Parameter M controls the maximum number of bidirectional connections per node in each layer, while efConstruction controls search depth during graph build time."
+  }'
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Response Example (Completed Report):**
+```json
+{
+  "sessionId": "session_CAND-003_1770416863",
+  "status": "completed",
+  "turnCount": 8,
+  "coveredCurriculumDays": [7, 8, 9, 10],
+  "coveredTopics": ["Embeddings Explained", "Vector Databases", "RAG Architectures", "Hybrid Search & Reranking"],
+  "question": null,
+  "report": {
+    "overallScore": 92,
+    "level": "advanced",
+    "confidence": 0.88,
+    "competencies": {
+      "correctness": {
+        "score": 3.8,
+        "normalizedScore": 95,
+        "confidence": 0.9,
+        "status": "strong",
+        "summary": "Demonstrated high technical accuracy...",
+        "evidenceIds": ["ev_1", "ev_2"]
+      }
+    },
+    "strengths": [
+      {
+        "id": "str_1",
+        "title": "HNSW Graph Indexing Mastery",
+        "description": "Demonstrated clear understanding of graph connectivity parameters.",
+        "topics": ["Embeddings Explained"],
+        "evidenceIds": ["ev_1"]
+      }
+    ],
+    "developmentAreas": [],
+    "feedback": {
+      "summary": "Emily demonstrated advanced technical depth across RAG and vector database architectures.",
+      "strongestAreas": ["Vector Indexing", "RAG Pipeline Optimization"],
+      "nextSteps": ["Explore quantization compression tradeoffs under extreme scale."]
+    }
+  }
+}
+```
 
-## Learn More
+## Running & Testing
 
-To learn more about Next.js, take a look at the following resources:
+### Development Server
+```bash
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Run Full Test Suite (196 tests across 10 suites)
+```bash
+npm test
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Run Contract Test Suite Only
+```bash
+npm run test:contract
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Typecheck & Production Build
+```bash
+npm run lint
+npm run build
+```

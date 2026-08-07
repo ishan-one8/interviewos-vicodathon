@@ -23,8 +23,9 @@ export function getCandidates() {
 }
 
 export function getCandidateById(id: string): CandidateProfile | undefined {
+  if (!id || typeof id !== "string") return undefined;
   const { candidates } = getCandidates();
-  return candidates.find((c) => c.id.toLowerCase() === id.toLowerCase());
+  return candidates.find((c) => c.id && c.id.toLowerCase() === id.toLowerCase());
 }
 
 export function getCurriculumTopicByDay(day: number): CurriculumTopic | undefined {

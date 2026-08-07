@@ -327,3 +327,43 @@ Build the final deterministic competency scoring engine (`scoring.ts`), evidence
 
 
 
+---
+
+### Milestone 14 — Official Hackathon HTTP API Contract & Compliance
+
+**Tool:** Google Antigravity
+**Goal:** Implement the official ViCodathon 2026 HTTP API contract (`POST /api/interview` and alias `POST /api/agent`), request/response validation layer, multi-turn session persistence integration, and contract test suite.
+
+**Key Accomplishments & Implementation Architecture:**
+1. **Source of Truth Zod Contract Schemas (`src/lib/api/contract.ts`):**
+   - Created `OfficialApiRequestSchema` supporting `candidateId` (start session) and `sessionId` + `questionId` + `answer` (continue session).
+   - Created `OfficialQuestionSchema`, `OfficialCompetencyResultSchema`, `OfficialReportFindingSchema`, `OfficialReportFeedbackSchema`, `OfficialReportSchema`, and `OfficialApiResponseSchema`.
+   - Guaranteed strict type validation and zero internal leakage (no `GEMINI_API_KEY`, system prompts, raw EvidenceLedger, or internal state machine metrics).
+2. **Structured API Errors (`src/lib/api/errors.ts`):**
+   - Implemented `ApiError` class and `formatErrorResponse` returning standardized JSON errors (`400 Bad Request`, `404 Not Found`, `405 Method Not Allowed`, `422 Unprocessable Entity`, `500 Internal Server Error`).
+3. **Thin Request/Response Adapters (`src/lib/api/request-adapter.ts`, `src/lib/api/response-adapter.ts`):**
+   - `handleOfficialInterviewRequest` validates candidates via `candidates.json` (returns `404 Candidate Not Found` for unknown candidates without silently defaulting), initializes session using Milestone 12 orchestrator, handles candidate answer submissions, checks idempotency for duplicate answer submissions, and triggers Milestone 13 report generator upon session completion.
+   - `buildOfficialResponse` maps internal orchestration results into the exact `OfficialApiResponse` shape and validates it via `OfficialApiResponseSchema.parse` before sending.
+4. **Official Route Handlers (`src/app/api/interview/route.ts`, `src/app/api/agent/route.ts`):**
+   - Endpoint paths `POST /api/interview` and `POST /api/agent`.
+   - HTTP method safety: `GET`, `PUT`, `DELETE` return `405 Method Not Allowed`.
+5. **Contract Test Suite & Automation (`tests/contract.test.ts`, `package.json`):**
+   - Added `npm run test:contract` script.
+   - Created 23 comprehensive contract test scenarios covering valid requests, invalid types, missing fields, candidate validation, multi-turn session continuity, idempotency, prompt-injection resistance, candidate personalization contrast (CAND-003 vs CAND-004), Gemini fallback mode, and end-to-end contract simulation.
+
+**Files Created / Modified:**
+- `src/lib/api/contract.ts` — Official Zod request and response schemas.
+- `src/lib/api/errors.ts` — Structured API error handler and HTTP status code mappers.
+- `src/lib/api/request-adapter.ts` — Request processing adapter connecting HTTP requests to the orchestrator.
+- `src/lib/api/response-adapter.ts` — Response mapper transforming orchestration results to official response payload.
+- `src/app/api/interview/route.ts` — Primary official API endpoint handler (`POST /api/interview`).
+- `src/app/api/agent/route.ts` — Alias official API endpoint handler (`POST /api/agent`).
+- `src/lib/data.ts` — Added safety null check to `getCandidateById`.
+- `src/lib/interview/orchestrator.ts` — Fixed candidate ID resolution in `finishInterviewSession`.
+- `package.json` — Added `"test:contract"` script.
+- `tests/contract.test.ts` — 23-scenario official contract test suite.
+
+**Verification:**
+- `npm test`: 196 / 196 tests passing across all 10 test suites (`candidate-intelligence`, `interview-state`, `planner`, `question-generator`, `answer-evaluator`, `memory`, `evidence`, `orchestrator`, `report`, `contract`).
+- `npm run lint`: 0 errors, 0 warnings.
+- `npm run build`: Next.js production build compiled cleanly across 17 static & dynamic routes.

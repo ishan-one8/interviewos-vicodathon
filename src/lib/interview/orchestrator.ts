@@ -423,16 +423,22 @@ export async function finishInterviewSession(
   });
   pushEvent(sessionId, compEvt);
 
-  const intel = getCandidateIntelligence(state.candidateId);
+  const intel = getCandidateIntelligence(state.candidate?.id || state.candidateId);
   const report = await buildInterviewReport({
     state,
-    candidateName: intel?.candidate.name,
+    candidateName: intel?.candidate?.name || state.candidate?.name,
   });
 
   return {
     success: true,
     snapshot: buildSafeCandidateSnapshot(state),
     events: getEvents(sessionId),
+    internalSnapshot: {
+      state,
+      events: getEvents(sessionId),
+      latestPlan: null as unknown as QuestionPlan,
+      canComplete: true,
+    },
     report,
   };
 }

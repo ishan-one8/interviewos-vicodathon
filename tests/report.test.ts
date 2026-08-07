@@ -11,7 +11,7 @@ import { generateDeterministicFeedback } from "../src/lib/report/feedback";
 import { createEmptyLedger, addTurnEvidenceToLedger } from "../src/lib/interview/evidence";
 import { createEmptyMemory } from "../src/lib/interview/memory";
 import { getReportLevel } from "../src/lib/report/constants";
-import { InterviewState, InterviewTurn, DifficultyLevel, CompetencyDimension, CompetencyResult, ContradictionSignal } from "../src/types/interview";
+import { InterviewState, InterviewTurn, DifficultyLevel, CompetencyDimension, CompetencyResult, ContradictionSignal, AnswerAssessment } from "../src/types/interview";
 
 function createTestState(cId: string = "CAND-003", sId: string = "test_session"): InterviewState {
   const intel = getCandidateIntelligence(cId)!;
@@ -21,10 +21,30 @@ function createTestState(cId: string = "CAND-003", sId: string = "test_session")
   return state;
 }
 
+function createTestAssessment(qId: string, ans: string, partial: Partial<AnswerAssessment>): AnswerAssessment {
+  return {
+    questionId: qId,
+    answer: ans,
+    performanceSignal: "strong",
+    scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 },
+    strengths: [],
+    gaps: [],
+    contradictions: [],
+    evidence: [],
+    summary: "Evaluation summary",
+    recommendedAction: "new_topic",
+    recommendedDifficulty: "intermediate",
+    confidence: 0.9,
+    ...partial,
+  };
+}
+
 function createDummyTurn(id: string, topic: string, day: number, diff: DifficultyLevel = "intermediate"): InterviewTurn {
+  const qId = `q_${id}`;
+  const ans = "Sample candidate answer text.";
   return {
     question: {
-      id: `q_${id}`,
+      id: qId,
       topic,
       curriculumDay: day,
       difficulty: diff,
@@ -33,24 +53,22 @@ function createDummyTurn(id: string, topic: string, day: number, diff: Difficult
       reasonForQuestion: "Testing coverage",
       createdAt: new Date().toISOString(),
     },
-    answer: "Sample candidate answer text.",
-    assessment: {
-      performanceSignal: "strong",
-      scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 },
-      confidence: 0.9,
+    answer: ans,
+    assessment: createTestAssessment(qId, ans, {
       strengths: [`Strong performance in ${topic}`],
-      gaps: [],
-    },
+    }),
   };
 }
 
 describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Report Suite", () => {
   it("TEST 1: Strong evidence produces strong competency score.", async () => {
     const state = createTestState("CAND-003", "test_1");
+    const qId = "q_1";
+    const ans = "Strong technical answer on HNSW embeddings.";
 
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: {
-        id: "q_1",
+        id: qId,
         topic: "Embeddings Explained",
         curriculumDay: 7,
         difficulty: "advanced",
@@ -59,14 +77,10 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
         reasonForQuestion: "Test",
         createdAt: new Date().toISOString(),
       },
-      answer: "Strong technical answer on HNSW embeddings.",
-      assessment: {
-        performanceSignal: "strong",
-        scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 },
-        confidence: 0.9,
+      answer: ans,
+      assessment: createTestAssessment(qId, ans, {
         strengths: ["Demonstrated strong correctness and embeddings mastery"],
-        gaps: [],
-      },
+      }),
     });
 
     const comps = calculateCompetencyResults(state.ledger!);
@@ -77,10 +91,12 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
 
   it("TEST 2: Weak evidence lowers competency score.", async () => {
     const state = createTestState("CAND-003", "test_2");
+    const qId = "q_1";
+    const ans = "I don't know.";
 
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: {
-        id: "q_1",
+        id: qId,
         topic: "Embeddings Explained",
         curriculumDay: 7,
         difficulty: "intermediate",
@@ -89,14 +105,13 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
         reasonForQuestion: "Test",
         createdAt: new Date().toISOString(),
       },
-      answer: "I don't know.",
-      assessment: {
+      answer: ans,
+      assessment: createTestAssessment(qId, ans, {
         performanceSignal: "weak",
         scores: { correctness: 0, depth: 0, reasoning: 0, practicalUnderstanding: 0, tradeoffAwareness: 0 },
         confidence: 0.85,
-        strengths: [],
         gaps: ["Demonstrated weak correctness and lack of understanding"],
-      },
+      }),
     });
 
     const comps = calculateCompetencyResults(state.ledger!);
@@ -112,14 +127,22 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "Vector DBs", curriculumDay: 8, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Good answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.8, strengths: ["Strong correctness in vector DBs"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Good answer", {
+        confidence: 0.8,
+        strengths: ["Strong correctness in vector DBs"],
+      }),
     });
 
     // Turn 2: score 2
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_2", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q2", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Partial answer",
-      assessment: { performanceSignal: "partial", scores: { correctness: 2, depth: 2, reasoning: 2, practicalUnderstanding: 2, tradeoffAwareness: 2 }, confidence: 0.8, strengths: [], gaps: ["Incorrect answer calculation in RAG"] },
+      assessment: createTestAssessment("q_2", "Partial answer", {
+        performanceSignal: "partial",
+        scores: { correctness: 2, depth: 2, reasoning: 2, practicalUnderstanding: 2, tradeoffAwareness: 2 },
+        confidence: 0.8,
+        gaps: ["Incorrect answer calculation in RAG"],
+      }),
     });
 
     const comps = calculateCompetencyResults(state.ledger!);
@@ -134,7 +157,9 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
       state.ledger = addTurnEvidenceToLedger(state.ledger!, {
         question: { id: `q_${i}`, topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: `Q${i}`, action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
         answer: "Strong answer",
-        assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: [`Strong correctness in turn ${i}`], gaps: [] },
+        assessment: createTestAssessment(`q_${i}`, "Strong answer", {
+          strengths: [`Strong correctness in turn ${i}`],
+        }),
       });
     }
 
@@ -142,7 +167,12 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_4", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q4", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Weak answer",
-      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.8, strengths: [], gaps: ["Weak correctness outlier"] },
+      assessment: createTestAssessment("q_4", "Weak answer", {
+        performanceSignal: "weak",
+        scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 },
+        confidence: 0.8,
+        gaps: ["Weak correctness outlier"],
+      }),
     });
 
     const comps = calculateCompetencyResults(state.ledger!);
@@ -157,14 +187,18 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state1.ledger = addTurnEvidenceToLedger(state1.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "foundation", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Correct answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Correct answer"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Correct answer", {
+        strengths: ["Correct answer"],
+      }),
     });
 
     // Architecture difficulty answer
     state2.ledger = addTurnEvidenceToLedger(state2.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "architecture", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Correct answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Correct answer"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Correct answer", {
+        strengths: ["Correct answer"],
+      }),
     });
 
     const comps1 = calculateCompetencyResults(state1.ledger!);
@@ -181,7 +215,12 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Answer",
-      assessment: { performanceSignal: "unclear", scores: { correctness: 2, depth: 2, reasoning: 2, practicalUnderstanding: 2, tradeoffAwareness: 2 }, confidence: 0.2, strengths: ["Unclear claim"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Answer", {
+        performanceSignal: "unclear",
+        scores: { correctness: 2, depth: 2, reasoning: 2, practicalUnderstanding: 2, tradeoffAwareness: 2 },
+        confidence: 0.2,
+        strengths: ["Unclear claim"],
+      }),
     });
 
     const comps = calculateCompetencyResults(state.ledger!);
@@ -204,7 +243,11 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     const sharedTurnInput = {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate" as const, text: "Q1", action: "new_topic" as const, reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Identical answer text",
-      assessment: { performanceSignal: "strong" as const, scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.8, strengths: ["Demonstrated skill"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Identical answer text", {
+        scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 },
+        confidence: 0.8,
+        strengths: ["Demonstrated skill"],
+      }),
     };
 
     state3.ledger = addTurnEvidenceToLedger(state3.ledger!, sharedTurnInput);
@@ -242,7 +285,11 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     const turnInput = {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate" as const, text: "Q1", action: "new_topic" as const, reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Sample answer",
-      assessment: { performanceSignal: "strong" as const, scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Sample strength"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Sample answer", {
+        scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 },
+        confidence: 0.85,
+        strengths: ["Sample strength"],
+      }),
     };
 
     state1.ledger = addTurnEvidenceToLedger(state1.ledger!, turnInput);
@@ -271,7 +318,9 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "Embeddings Explained", curriculumDay: 7, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["High mastery of Embeddings Explained"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Answer", {
+        strengths: ["High mastery of Embeddings Explained"],
+      }),
     });
 
     const topicResults = calculateTopicResults(state.ledger!, state);
@@ -302,7 +351,9 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "advanced", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Strong technical answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["High depth in RAG"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Strong technical answer", {
+        strengths: ["High depth in RAG"],
+      }),
     });
 
     const { strengths } = buildEvidenceBackedFindings(state.ledger!);
@@ -316,7 +367,12 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "I don't know",
-      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.85, strengths: [], gaps: ["Gap in RAG knowledge"] },
+      assessment: createTestAssessment("q_1", "I don't know", {
+        performanceSignal: "weak",
+        scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 },
+        confidence: 0.85,
+        gaps: ["Gap in RAG knowledge"],
+      }),
     });
 
     const { developmentAreas } = buildEvidenceBackedFindings(state.ledger!);
@@ -330,7 +386,11 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Solid RAG concept"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Answer", {
+        scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 },
+        confidence: 0.85,
+        strengths: ["Solid RAG concept"],
+      }),
     });
 
     const overallClean = calculateOverallResult(calculateCompetencyResults(state.ledger!), state);
@@ -381,7 +441,12 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Weak",
-      assessment: { performanceSignal: "weak", scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 }, confidence: 0.8, strengths: [], gaps: ["Weak RAG initial answer"] },
+      assessment: createTestAssessment("q_1", "Weak", {
+        performanceSignal: "weak",
+        scores: { correctness: 1, depth: 1, reasoning: 1, practicalUnderstanding: 1, tradeoffAwareness: 1 },
+        confidence: 0.8,
+        gaps: ["Weak RAG initial answer"],
+      }),
     });
 
     const scoreEarly = calculateCompetencyResults(state.ledger!).correctness.score;
@@ -390,7 +455,9 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_2", topic: "RAG", curriculumDay: 9, difficulty: "advanced", text: "Q2", action: "clarify", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Strong refined answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Strong RAG refined answer"], gaps: [] },
+      assessment: createTestAssessment("q_2", "Strong refined answer", {
+        strengths: ["Strong RAG refined answer"],
+      }),
     });
 
     const scoreLater = calculateCompetencyResults(state.ledger!).correctness.score;
@@ -403,7 +470,9 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_100", topic: "Vector DBs", curriculumDay: 8, difficulty: "advanced", text: "Q", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Answer text",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Strong vector DB mastery"], gaps: [] },
+      assessment: createTestAssessment("q_100", "Answer text", {
+        strengths: ["Strong vector DB mastery"],
+      }),
     });
 
     const report = await buildInterviewReport({ state, forceFallbackFeedback: true });
@@ -416,7 +485,9 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Sample answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 4, depth: 4, reasoning: 4, practicalUnderstanding: 4, tradeoffAwareness: 4 }, confidence: 0.9, strengths: ["Sample strength in RAG"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Sample answer", {
+        strengths: ["Sample strength in RAG"],
+      }),
     });
 
     const explanation = getScoreExplanation(state.ledger!, "correctness", state);
@@ -431,7 +502,11 @@ describe("Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Rep
     state.ledger = addTurnEvidenceToLedger(state.ledger!, {
       question: { id: "q_1", topic: "RAG", curriculumDay: 9, difficulty: "intermediate", text: "Q1", action: "new_topic", reasonForQuestion: "Test", createdAt: new Date().toISOString() },
       answer: "Sample answer",
-      assessment: { performanceSignal: "strong", scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 }, confidence: 0.85, strengths: ["Sample strength"], gaps: [] },
+      assessment: createTestAssessment("q_1", "Sample answer", {
+        scores: { correctness: 3, depth: 3, reasoning: 3, practicalUnderstanding: 3, tradeoffAwareness: 3 },
+        confidence: 0.85,
+        strengths: ["Sample strength"],
+      }),
     });
 
     const deterministicOverall = calculateOverallResult(calculateCompetencyResults(state.ledger!), state).score;
