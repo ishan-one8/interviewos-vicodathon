@@ -9,7 +9,8 @@ import { InterviewProgress } from "@/components/interview/InterviewProgress";
 import { ProcessingState } from "@/components/interview/ProcessingState";
 import { InterviewError } from "@/components/interview/InterviewError";
 import { CompletionState } from "@/components/interview/CompletionState";
-import { OfficialApiResponse, OfficialQuestion, CandidateProfile } from "@/types/interview";
+import { OfficialApiResponse, OfficialQuestion } from "@/lib/api/contract";
+import { CandidateProfile } from "@/types/interview";
 import { getCandidates } from "@/lib/data";
 import { ArrowLeft } from "lucide-react";
 
@@ -30,6 +31,21 @@ export default function InterviewPage() {
       return null;
     }
   });
+
+  // Session State
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [status, setStatus] = useState<"active" | "completed" | "lobby">("lobby");
+  const [currentQuestion, setCurrentQuestion] = useState<OfficialQuestion | null>(null);
+  const [coveredTopics, setCoveredTopics] = useState<string[]>([]);
+  const [coveredCurriculumDays, setCoveredCurriculumDays] = useState<number[]>([]);
+  const [turnCount, setTurnCount] = useState<number>(0);
+
+  // UX State
+  const [isStarting, setIsStarting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [previousTopic, setPreviousTopic] = useState<string | null>(null);
+  const [lastSubmittedAnswer, setLastSubmittedAnswer] = useState<string>("");
 
   // Handler: Start New Interview Session
   const handleStartInterview = async () => {
@@ -57,7 +73,7 @@ export default function InterviewPage() {
       setCoveredCurriculumDays(data.coveredCurriculumDays);
       setTurnCount(data.turnCount);
       setPreviousTopic(data.question?.topic || null);
-    } catch (err) {
+    } catch {
       setErrorMessage("We couldn't start the interview session. Please try again.");
     } finally {
       setIsStarting(false);
@@ -95,7 +111,7 @@ export default function InterviewPage() {
       setCoveredTopics(data.coveredTopics);
       setCoveredCurriculumDays(data.coveredCurriculumDays);
       setTurnCount(data.turnCount);
-    } catch (err) {
+    } catch {
       setErrorMessage("We couldn't process that response yet. Your answer is preserved — try submitting again.");
     } finally {
       setIsSubmitting(false);
@@ -119,13 +135,7 @@ export default function InterviewPage() {
   );
 
   // Check if follow-up
-  const isFollowUp = Boolean(
-    currentQuestion &&
-      (currentQuestion.action === "deepen" ||
-        currentQuestion.action === "follow_up" ||
-        currentQuestion.action === "probe" ||
-        turnCount > 1)
-  );
+  const isFollowUp = Boolean(currentQuestion && turnCount > 1);
 
   return (
     <ProductShell activeRoute="interview">

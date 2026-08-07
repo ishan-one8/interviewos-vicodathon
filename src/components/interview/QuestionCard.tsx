@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { OfficialQuestion } from "@/types/interview";
+import { OfficialQuestion } from "@/lib/api/contract";
 import { InterviewerIdentity } from "./InterviewerIdentity";
 import { Sparkles, Compass, Layers } from "lucide-react";
 
