@@ -12,7 +12,7 @@ import { decreaseDifficulty } from "@/lib/interview/difficulty";
 export interface AnswerEvaluationInput {
   question: InterviewQuestion;
   answer: string;
-  plan: QuestionPlan;
+  plan?: QuestionPlan;
   learningObjectives: string[];
   previousTurn?: InterviewTurn;
   forceFallback?: boolean;
@@ -48,15 +48,21 @@ export async function evaluateCandidateAnswer(
   const startTime = Date.now();
   const { question, answer, learningObjectives, previousTurn, forceFallback } = input;
   const plan: QuestionPlan = input.plan || {
+    topicId: `day-${question.curriculumDay}`,
     topic: question.topic,
     curriculumDay: question.curriculumDay,
+    moduleTitle: question.topic,
     difficulty: question.difficulty,
     action: question.action,
     objective: question.reasonForQuestion || question.topic,
-    basedOnQuestionId: question.basedOnQuestionId,
     reasonForSelection: "Turn evaluation",
-    expectedCompetency: question.topic,
+    candidateEvidence: [],
+    plannerSignals: [],
+    basedOnQuestionId: question.basedOnQuestionId,
     coverageImpact: { addsNewCurriculumDay: false, uniqueDaysAfterQuestion: 1 },
+    priorityScore: 50,
+    phase: "calibration",
+    selectionMode: "candidate_strength",
   };
 
   const trimmedAnswer = (answer || "").trim();

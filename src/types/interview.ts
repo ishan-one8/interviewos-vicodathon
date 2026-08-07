@@ -568,6 +568,7 @@ export type InternalInterviewSnapshot = {
   memorySignals?: PlannerMemorySignal;
   evidenceGapSignal?: EvidenceGapSignal;
   canComplete: boolean;
+  report?: InterviewReport;
 };
 
 export type OrchestrationResult = {
@@ -575,5 +576,114 @@ export type OrchestrationResult = {
   snapshot: CandidateInterviewSnapshot;
   events: InterviewEvent[];
   internalSnapshot?: InternalInterviewSnapshot;
+  report?: InterviewReport;
   error?: string;
+};
+
+// ==========================================
+// 10. Milestone 13 Report Types
+// ==========================================
+
+export type ReportLevel =
+  | "needs_development"
+  | "developing"
+  | "competent"
+  | "strong"
+  | "advanced";
+
+export type CompetencyStatus =
+  | "insufficient_evidence"
+  | "developing"
+  | "competent"
+  | "strong";
+
+export type CompetencyResult = {
+  dimension: CompetencyDimension;
+  score: number; // 0 - 4 scale
+  normalizedScore: number; // 0 - 100 scale
+  confidence: number; // 0.0 - 1.0
+  evidenceCount: number;
+  evidenceIds: string[];
+  status: CompetencyStatus;
+  summary: string;
+};
+
+export type TopicResult = {
+  topic: string;
+  curriculumDays: number[];
+  score: number | null; // 0 - 4 scale
+  normalizedScore: number | null; // 0 - 100 scale
+  confidence: number;
+  status: "assessed" | "not_assessed" | "insufficient_evidence";
+  strengths: string[];
+  gaps: string[];
+  evidenceIds: string[];
+};
+
+export type ReportFinding = {
+  id: string;
+  title: string;
+  description: string;
+  evidenceIds: string[];
+  topics: string[];
+  confidence: number;
+};
+
+export type ReportContradictionSummary = {
+  id: string;
+  topic: string;
+  statementA: string;
+  statementB: string;
+  status: "unresolved" | "clarified" | "resolved";
+  explanation: string;
+};
+
+export type ScoreExplanation = {
+  competency: CompetencyDimension;
+  rawScore: number;
+  normalizedScore: number;
+  confidence: number;
+  status: CompetencyStatus;
+  evidenceCount: number;
+  supportingEvidence: Array<{
+    evidenceId: string;
+    statement: string;
+    score: number;
+    weight: number;
+  }>;
+  gapEvidence: Array<{
+    evidenceId: string;
+    statement: string;
+    score: number;
+    weight: number;
+  }>;
+  weightingSummary: string;
+};
+
+export type InterviewReport = {
+  sessionId: string;
+  candidateId: string;
+  candidateName: string;
+  reportStatus: "provisional" | "final";
+  completion: {
+    questionsAnswered: number;
+    curriculumDaysCovered: number[];
+    requirementsSatisfied: boolean;
+  };
+  overall: {
+    score: number; // 0 - 100
+    confidence: number; // 0.0 - 1.0
+    level: ReportLevel;
+  };
+  competencies: Record<CompetencyDimension, CompetencyResult>;
+  topicResults: TopicResult[];
+  strengths: ReportFinding[];
+  developmentAreas: ReportFinding[];
+  contradictions: ReportContradictionSummary[];
+  feedback: {
+    summary: string;
+    strongestAreas: string[];
+    nextSteps: string[];
+  };
+  generatedAt: string;
 };

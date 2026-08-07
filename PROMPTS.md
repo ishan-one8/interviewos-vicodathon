@@ -260,46 +260,70 @@ Build cross-turn interview memory (`InterviewMemory`), structured claim extracti
 
 ---
 
-## Milestone 11 — Evidence Ledger, Provenance Tracking & Competency Aggregation
+## Milestone 12 — Full Adaptive Interview Orchestrator & End-to-End Execution Loop
 
 **Assisted by:** Google Antigravity (Gemini 3.6 Flash)
 
 **Goal:**
-Build an auditable Evidence Ledger (`EvidenceLedger`), strict provenance tracking (`Provenance`), competency evidence aggregation (`TopicEvidenceMatrix`), deterministic evidence weighting (`getEvidenceWeight`), and planner evidence-gap signals (`getEvidenceGapSignalForPlanner`) to ensure all future interview conclusions are backed by verified, auditable interview observations.
-
-**Architectural Decisions:**
-1. **Prior vs Observed Evidence Separation:**
-   - Milestone 5 Candidate Intelligence is treated strictly as **PRIOR INFORMATION** (used solely to guide initial question selection).
-   - Milestone 11 Evidence Ledger contains only **OBSERVED INTERVIEW EVIDENCE** demonstrated during actual interview turns. They are never mixed.
-2. **Strongly Typed Evidence Ledger Model:**
-   - Implemented `EvidenceEntry`, `Provenance`, `CompetencyCoverageItem`, `TopicEvidenceMatrix`, `EvidenceGapSignal`, and `EvidenceLedger` in `src/types/interview.ts`.
-   - Each entry records `questionId`, `turnId`, `curriculumDay`, `topic`, `competency` (`correctness`, `depth`, `reasoning`, `practicalUnderstanding`, `tradeoffAwareness`), `type` (`strength`, `gap`, `contradiction`, `clarification`, `refinement`), `observation`, `score`, `difficulty`, `confidence`, `source`, `weight`, and `provenance`.
-3. **Deterministic Evidence Creation & Weighting:**
-   - Derived zero-cost evidence from validated `AnswerAssessment` + `InterviewMemory` without making additional LLM API calls.
-   - `getEvidenceWeight` calculates normalized 0.0–1.0 weights based on question difficulty (`foundation: 0.6` to `tradeoff: 1.3`), confidence, and evidence type.
-   - Automatic deduplication prevents repetitive ledger entries.
-4. **Competency Evidence Matrix & Adaptive Planner Bridge:**
-   - `getEvidenceCoverageMatrix` constructs a topic x competency matrix mapping strengths and gaps.
-   - `getEvidenceGapSignalForPlanner` identifies topics with shallow evidence (e.g. definition questions answered, but lacking practical understanding or trade-off evidence).
-   - Planner (`planNextQuestion`) incorporates evidence-gap signals to select `action: "deepen"` while respecting Milestone 6 hard state-machine guardrails (`MIN_QUESTIONS=8`, `MIN_CURRICULUM_DAYS=4`, `MAX_QUESTIONS=12`) and coverage rescue mode.
-5. **Debug Endpoint & Test Suite:**
-   - Created `GET /api/debug/evidence` supporting `scenario=strength|mixed|contradiction|refinement|coverage-gap`.
-   - Created `tests/evidence.test.ts` containing 25 comprehensive test cases (117/117 total tests passing across codebase).
+Build the end-to-end adaptive interview orchestrator (`orchestrator.ts`), session repository abstraction (`session-repository.ts`), candidate-safe snapshot builder (`orchestrator-snapshots.ts`), and session execution endpoints to connect all previous engine modules into one reliable interview execution workflow.
 
 **Files Created / Modified:**
-- `src/types/interview.ts` — Added `CompetencyDimension`, `EvidenceType`, `Provenance`, `EvidenceEntrySchema`, `EvidenceEntry`, `CompetencyCoverageItem`, `TopicEvidenceMatrix`, `EvidenceGapSignal`, and `EvidenceLedger`. Removed legacy `EvidenceEntry`.
-- `src/lib/interview/evidence-weight.ts` — Deterministic evidence weighting helper (`getEvidenceWeight`).
-- `src/lib/interview/evidence.ts` — Pure functions (`createEmptyLedger`, `createEvidenceFromTurn`, `addTurnEvidenceToLedger`, `addContradictionEvidenceToLedger`).
-- `src/lib/interview/evidence-selectors.ts` — Pure selectors (`getEvidenceForTopic`, `getEvidenceForCompetency`, `getStrengthEvidence`, `getGapEvidence`, `getEvidenceCoverageMatrix`, `getEvidenceGapSignalForPlanner`).
-- `src/lib/interview/planner.ts` — Integrated `EvidenceGapSignal` into `planNextQuestion`.
-- `src/app/api/debug/evidence/route.ts` — Debug API route returning audit trace, evidence ledger, and matrix.
-- `tests/evidence.test.ts` — 25-scenario test suite.
-- `PROMPTS.md` — Logged Milestone 11 progress.
+- `src/lib/interview/session-repository.ts` — Storage abstraction interface (`SessionRepository`) and `InMemorySessionRepository`.
+- `src/lib/interview/orchestrator-snapshots.ts` — `buildSafeCandidateSnapshot` and `createEvent`.
+- `src/lib/interview/orchestrator.ts` — Full lifecycle execution engine (`startAdaptiveInterview`, `submitInterviewAnswer`, `canFinishInterview`, `shouldFinishInterview`, `finishInterviewSession`, `getInterviewSnapshot`, `getInternalSnapshot`).
+- `src/app/api/debug/interview/start/route.ts` — API route for starting session.
+- `src/app/api/debug/interview/answer/route.ts` — API route for submitting candidate answer.
+- `src/app/api/debug/interview/route.ts` — API route for inspecting snapshot.
+- `src/app/api/debug/interview-simulation/route.ts` — API route for simulating full 8-turn interview loop.
+- `tests/orchestrator.test.ts` — 29-scenario test suite.
+
+---
+
+## Milestone 13 — Final Competency Scoring Engine & Evidence-Backed Report
+
+**Assisted by:** Google Antigravity (Gemini 3.6 Flash)
+
+**Goal:**
+Build the final deterministic competency scoring engine (`scoring.ts`), evidence-backed interview report generator (`report.ts`), topic result analyzer (`topics.ts`), evidence findings extractor (`findings.ts`), Gemini feedback writer with deterministic fallback (`feedback.ts`), and score explainability API (`explainability.ts`).
+
+**Architectural Decisions:**
+1. **100% Deterministic Numeric Scoring:**
+   - All numeric scoring (0–4 raw, 0–100 normalized), competency status (`insufficient_evidence`, `developing`, `competent`, `strong`), and overall levels (`needs_development`, `developing`, `competent`, `strong`, `advanced`) are calculated purely in TypeScript code directly from the `EvidenceLedger`.
+   - **Zero AI calls** are used for numeric scoring or evidence aggregation.
+2. **Prior vs Demonstrated Score Separation:**
+   - Candidate Intelligence Engine profile history (prior) is **strictly separated** from demonstrated interview scores. Prior history explains question selection, but never inflates or deflates demonstrated competency scores.
+3. **Conservatively Weighted Difficulty Multipliers:**
+   - Centralized difficulty constants in `constants.ts`: `foundation: 1.00`, `intermediate: 1.05`, `advanced: 1.10`, `debugging: 1.12`, `architecture: 1.15`, `tradeoff: 1.15`.
+   - Wrong answers on advanced questions do not outscore correct answers on intermediate questions.
+4. **Insufficient Evidence Handling:**
+   - Unassessed competencies are marked `insufficient_evidence` with `confidence: 0.0` and excluded from pulling overall normalized score to 0, while penalizing overall confidence appropriately.
+5. **Score Explainability API:**
+   - `getScoreExplanation(ledger, dimension, state)` returns an exact mathematical breakdown of supporting vs gap evidence, difficulty multipliers, and evidence IDs without exposing internal LLM prompts or chain-of-thought.
+6. **Gemini Feedback Writer + Fallback:**
+   - Gemini receives ONLY deterministic scores, findings, and topic summaries to polish natural language feedback (`summary`, `strongestAreas`, `nextSteps`). Gemini has zero authority over numeric scores, levels, or evidence IDs.
+   - If Gemini is unavailable, disabled, or times out, `generateDeterministicFeedback` takes over seamlessly with 2–5 specific technical recommendations.
+7. **Debug Endpoint & Test Suite:**
+   - Created `GET /api/debug/report?scenario=strong|mixed|insufficient-evidence|contradiction|refinement` and `GET /api/debug/report?sessionId=<id>`.
+   - Created `tests/report.test.ts` containing 27 comprehensive test cases (173/173 total tests passing across codebase).
+
+**Files Created / Modified:**
+- `src/types/interview.ts` — Added `ReportLevel`, `CompetencyStatus`, `CompetencyResult`, `TopicResult`, `ReportFinding`, `ReportContradictionSummary`, `ScoreExplanation`, and `InterviewReport`. Added `report` to `OrchestrationResult` and `InternalInterviewSnapshot`.
+- `src/lib/report/constants.ts` — Centralized difficulty weights (`DIFFICULTY_WEIGHTS`), level thresholds (`LEVEL_THRESHOLDS`), and level mapper (`getReportLevel`).
+- `src/lib/report/scoring.ts` — Deterministic competency score aggregator (`calculateCompetencyResults`) and overall score aggregator (`calculateOverallResult`).
+- `src/lib/report/topics.ts` — Curriculum topic results analyzer (`calculateTopicResults`).
+- `src/lib/report/findings.ts` — Evidence-backed findings builder (`buildEvidenceBackedFindings`) and contradiction summarizer (`summarizeContradictions`).
+- `src/lib/report/feedback.ts` — Structured Gemini feedback writer (`generateReportFeedback`) with deterministic fallback (`generateDeterministicFeedback`).
+- `src/lib/report/explainability.ts` — Score explainability service (`getScoreExplanation`).
+- `src/lib/report/report.ts` — Main report orchestrator (`buildInterviewReport`).
+- `src/lib/interview/orchestrator.ts` — Integrated `buildInterviewReport` into `finishInterviewSession`.
+- `src/app/api/debug/report/route.ts` — Debug simulation route for reports and score explanations.
+- `tests/report.test.ts` — 27-scenario test suite.
 
 **Verification:**
-- Test suite passed 117/117 tests across all 7 test suites (`candidate-intelligence.test.ts`, `interview-state.test.ts`, `planner.test.ts`, `question-generator.test.ts`, `answer-evaluator.test.ts`, `memory.test.ts`, `evidence.test.ts`).
+- Test suite passed 173/173 tests across all 9 test suites (`candidate-intelligence`, `interview-state`, `planner`, `question-generator`, `answer-evaluator`, `memory`, `evidence`, `orchestrator`, `report`).
 - `npm run lint` returned 0 errors and 0 warnings.
-- Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors.
+- Production build `npm run build` completed cleanly with zero TypeScript or Next.js errors across 15 routes.
+
 
 
 

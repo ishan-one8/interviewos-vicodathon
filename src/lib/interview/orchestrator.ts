@@ -7,6 +7,7 @@ import {
 } from "@/types/interview";
 import { getCandidateIntelligence, getCurriculum } from "@/lib/data";
 import { createInterviewSession } from "@/lib/interview/state";
+import { buildInterviewReport } from "@/lib/report/report";
 import { planNextQuestion } from "@/lib/interview/planner";
 import { generateTechnicalQuestion } from "@/lib/ai/question-generator";
 import { evaluateCandidateAnswer } from "@/lib/ai/answer-evaluator";
@@ -422,10 +423,17 @@ export async function finishInterviewSession(
   });
   pushEvent(sessionId, compEvt);
 
+  const intel = getCandidateIntelligence(state.candidateId);
+  const report = await buildInterviewReport({
+    state,
+    candidateName: intel?.candidate.name,
+  });
+
   return {
     success: true,
     snapshot: buildSafeCandidateSnapshot(state),
     events: getEvents(sessionId),
+    report,
   };
 }
 

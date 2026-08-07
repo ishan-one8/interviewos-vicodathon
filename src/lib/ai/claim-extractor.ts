@@ -10,7 +10,7 @@ import { generateTextWithGemini, isGeminiConfigured, Type } from "@/lib/ai/gemin
 export interface ClaimExtractionInput {
   question: InterviewQuestion;
   answer: string;
-  plan: QuestionPlan;
+  plan?: QuestionPlan;
   assessment?: AnswerAssessment;
   turnId: string;
   forceFallback?: boolean;

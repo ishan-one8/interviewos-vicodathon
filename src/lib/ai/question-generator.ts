@@ -2,6 +2,7 @@ import {
   QuestionPlan,
   QuestionGenerationOutput,
   GeneratedQuestionSchema,
+  InterviewQuestion,
 } from "@/types/interview";
 import {
   generateTextWithGemini,
@@ -252,8 +253,6 @@ function createFallbackOutput(
     text = `To challenge this architectural assumption regarding ${plan.topic}: ${text}`;
   } else if (plan.action === "deepen") {
     text = `Deepening into ${plan.topic} advanced details: ${text}`;
-  } else if (plan.action === "probe") {
-    text = `Probing fundamental principles of ${plan.topic}: ${text}`;
   }
 
   return {
