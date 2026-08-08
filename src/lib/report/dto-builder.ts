@@ -12,7 +12,7 @@ import { createEmptyLedger, addTurnEvidenceToLedger } from "@/lib/interview/evid
 import { createEmptyMemory } from "@/lib/interview/memory";
 import { getCandidateIntelligence } from "@/lib/data";
 import { createInterviewSession } from "@/lib/interview/state";
-import { defaultSessionRepository } from "@/lib/interview/session-repository";
+import { defaultSessionRepository, type SessionRepository } from "@/lib/interview/session-repository";
 
 export type ReplayTurnItem = {
   turnNumber: number;
@@ -67,15 +67,33 @@ export type CandidateReportDTO = {
   adaptationSummary: AdaptationSummary;
 };
 
-export async function buildCandidateReportDTO(input: {
-  sessionId?: string;
-  candidateId?: string;
-  scenario?: string;
-}): Promise<CandidateReportDTO | null> {
+function isReportDTO(value: unknown): value is CandidateReportDTO {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "report" in value &&
+    "replayTimeline" in value
+  );
+}
+
+export async function buildCandidateReportDTO(
+  input: {
+    sessionId?: string;
+    candidateId?: string;
+    scenario?: string;
+  },
+  repository: SessionRepository = defaultSessionRepository
+): Promise<CandidateReportDTO | null> {
   let state: InterviewState | null = null;
 
   if (input.sessionId) {
-    state = await defaultSessionRepository.getSession(input.sessionId);
+    // Serve a persisted completed report verbatim (survives restart; no
+    // regeneration of AI-polished copy on every page load).
+    if (repository.getReport) {
+      const cached = await repository.getReport(input.sessionId);
+      if (isReportDTO(cached)) return cached;
+    }
+    state = await repository.getSession(input.sessionId);
   }
 
   // If no session found in memory repository, build a deterministic fallback interview session for demo/test purposes
@@ -353,11 +371,23 @@ export async function buildCandidateReportDTO(input: {
     else if (a === "new_topic") adaptationSummary.newTopicCount++;
   }
 
-  return {
+  const dto: CandidateReportDTO = {
     report,
     scoreExplanations,
     replayTimeline,
     judgeTraceSummary,
     adaptationSummary,
   };
+
+  // Persist the finished report once so later loads (and restarts) return it
+  // verbatim. Only for real, completed sessions — never the demo fallback.
+  if (input.sessionId && state.status === "completed" && repository.saveReport) {
+    try {
+      await repository.saveReport(input.sessionId, dto);
+    } catch {
+      // Report caching is best-effort; a failure must not break report viewing.
+    }
+  }
+
+  return dto;
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { defaultSessionRepository } from "@/lib/interview/session-repository";
+import { getSessionRepository } from "@/lib/interview/repository-factory";
 import { buildInterviewSessionDTO } from "@/lib/interview/safe-dto";
 
 export async function GET(request: NextRequest) {
@@ -8,15 +8,15 @@ export async function GET(request: NextRequest) {
 
     if (!sessionId) {
       return NextResponse.json(
-        { success: false, error: "Session ID is required." },
+        { success: false, error: "INVALID_REQUEST" },
         { status: 400 }
       );
     }
 
-    const state = await defaultSessionRepository.getSession(sessionId);
+    const state = await getSessionRepository().getSession(sessionId);
     if (!state) {
       return NextResponse.json(
-        { success: false, error: "Session not found or expired." },
+        { success: false, error: "SESSION_NOT_FOUND" },
         { status: 404 }
       );
     }
@@ -24,9 +24,10 @@ export async function GET(request: NextRequest) {
     const dto = buildInterviewSessionDTO(state);
     return NextResponse.json({ success: true, session: dto });
   } catch {
+    // Never leak DB internals — treat as a safe unavailable state.
     return NextResponse.json(
-      { success: false, error: "Internal server error." },
-      { status: 500 }
+      { success: false, error: "SESSION_UNAVAILABLE" },
+      { status: 503 }
     );
   }
 }

@@ -36,6 +36,13 @@ import {
   SessionRepository,
   defaultSessionRepository,
 } from "@/lib/interview/session-repository";
+import { generateSecureSessionId, PersistenceError } from "@/lib/interview/persistence";
+
+function toSafeErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof PersistenceError) return err.code;
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
 import {
   buildSafeCandidateSnapshot,
   createEvent,
@@ -75,7 +82,8 @@ export async function startAdaptiveInterview(
     }
 
     const { topics } = getCurriculum();
-    const sessionId = customSessionId || `session_${candidateId}_${Date.now().toString(36)}`;
+    // Opaque, non-guessable id — never encodes candidate id, name, or a counter.
+    const sessionId = customSessionId || generateSecureSessionId();
     let state = createInterviewSession(intelligence.candidate, intelligence, sessionId);
 
     // Initialize Memory & Evidence Ledger
@@ -131,12 +139,11 @@ export async function startAdaptiveInterview(
       },
     };
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : "Initialization error";
     return {
       success: false,
       snapshot: null as unknown as CandidateInterviewSnapshot,
       events: [],
-      error: errorMsg,
+      error: toSafeErrorMessage(err, "Initialization error"),
     };
   }
 }
@@ -352,12 +359,11 @@ export async function submitInterviewAnswer(
       },
     };
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : "Answer submission error";
     return {
       success: false,
       snapshot: null as unknown as CandidateInterviewSnapshot,
       events: [],
-      error: errorMsg,
+      error: toSafeErrorMessage(err, "Answer submission error"),
     };
   }
 }

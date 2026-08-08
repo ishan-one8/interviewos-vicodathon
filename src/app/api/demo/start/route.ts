@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCandidateById } from "@/lib/data";
 import { startAdaptiveInterview } from "@/lib/interview/orchestrator";
+import { getSessionRepository } from "@/lib/interview/repository-factory";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await startAdaptiveInterview(candidateId);
+    const result = await startAdaptiveInterview(candidateId, undefined, getSessionRepository());
 
     if (!result.success) {
       return NextResponse.json(

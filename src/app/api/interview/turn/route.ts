@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { submitInterviewAnswer } from "@/lib/interview/orchestrator";
 import { buildInterviewSessionDTO } from "@/lib/interview/safe-dto";
+import { getSessionRepository } from "@/lib/interview/repository-factory";
+
+/** Map an orchestrator error into a safe { code, status } pair. */
+function mapSafeError(raw: string | undefined): { code: string; status: number } {
+  const e = raw || "";
+  if (e === "TURN_CONFLICT") return { code: "TURN_CONFLICT", status: 409 };
+  if (e === "SESSION_UNAVAILABLE") return { code: "SESSION_UNAVAILABLE", status: 503 };
+  if (e === "SESSION_NOT_FOUND" || /not found/i.test(e)) return { code: "SESSION_NOT_FOUND", status: 404 };
+  if (/invalid questionid|already completed/i.test(e)) return { code: "INVALID_REQUEST", status: 409 };
+  return { code: "INVALID_REQUEST", status: 400 };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,13 +37,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await submitInterviewAnswer({ sessionId, questionId, answer });
+    const result = await submitInterviewAnswer({
+      sessionId,
+      questionId,
+      answer,
+      repository: getSessionRepository(),
+    });
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error || "Failed to process answer." },
-        { status: 400 }
-      );
+      const { code, status } = mapSafeError(result.error);
+      return NextResponse.json({ success: false, error: code }, { status });
     }
 
     const state = result.internalSnapshot?.state;

@@ -677,3 +677,71 @@ Full `prefers-reduced-motion` override (parallax/continuous motion/path-draw dis
 - `npm test`: **230 / 230 passing** (13 suites; backend untouched).
 - `npm run build`: production build **clean**, 26 routes.
 - Browser-verified: hero + floating orbit, demo branch illumination (David), report score arc + count-ups, replay interactivity (8 expanders), mobile hamburger + stacked hero. Some below-the-fold checks used DOM inspection due to a preview-pane scroll-capture limitation.
+
+---
+
+## M19 — PRODUCTION PERSISTENCE + SECURE SESSION RECOVERY
+
+**Goal:** Turn in-memory prototype sessions into persistent, resumable, production-style sessions with opaque secure IDs — without touching the engine, Gemini, the official API contract, or the M18.2 visuals.
+
+### Audit (what disappeared on restart)
+Sessions lived only in an in-memory `Map` (`InMemorySessionRepository` / `defaultSessionRepository`); the module-level `eventStore` too. Session IDs were `session_${candidateId}_${Date.now()}` — **leaking the candidate id** in `/interview/[sessionId]` URLs. On server restart, all sessions and reports vanished. The report/replay DTO is derived entirely from `InterviewState` (turns, ledger, memory, coveredTopics), so persisting the state is sufficient for full recovery.
+
+### Storage selected
+Supabase PostgreSQL (opt-in). Single table `interview_sessions` (`supabase/schema.sql`): `id uuid pk, candidate_id, status, schema_version, version, state_json jsonb, report_json jsonb, created_at, updated_at, completed_at`, RLS enabled (service-role only). When env is unset, the app transparently uses the in-memory repository (local dev + tests).
+
+### Repository architecture (engine stays storage-agnostic)
+- `SessionRepository` interface (+ optional `saveReport`/`getReport`).
+- `InMemorySessionRepository` (unit tests, fallback) — now also caches reports.
+- `SupabaseSessionRepository` — JSONB state, optimistic-concurrency CAS, report cache.
+- `repository-factory.ts::getSessionRepository()` is the ONLY place that chooses Supabase vs in-memory, imported only by the four API routes. The orchestrator/dto-builder keep `defaultSessionRepository` as their default, so `npm test` never touches a DB.
+
+### Secure session IDs
+`crypto.randomUUID()` (`generateSecureSessionId`). Verified live: `57ba2252-…` — no candidate id, no name, no counter. Candidate identity stays server-side.
+
+### Versioned + validated state
+`schema_version = 1`; `validatePersistedState` (Zod) checks the envelope + critical fields and passes engine internals through loosely — never blindly casting DB JSON. Corrupt payloads → safe null (unavailable), never a crash.
+
+### Recovery behavior
+- Refresh / independent request → same interview (verified: answered=2, turnCount=3, current question restored across separate HTTP calls).
+- ACTIVE → restores the exact unanswered question (no new question generated on reload).
+- COMPLETED → restores report; report JSON is persisted once and served verbatim (no AI-copy regeneration on reload).
+- Unknown/invalid → safe `SESSION_NOT_FOUND` (404).
+
+### Write order & idempotency
+`load → validate question → process → generate state → persist → respond` — success is returned only after `saveSession`/`createSession` succeeds. Duplicate submit of an already-answered `questionId` is rejected (verified live: HTTP **409**, no duplicate turn / evidence / next question).
+
+### Concurrency
+Optimistic `version` column with atomic compare-and-swap `UPDATE … WHERE id AND version = expected`; the loser of a concurrent write gets `TURN_CONFLICT` (verified via a DB-free fake client). No locking infrastructure.
+
+### Security & safe errors
+Service-role key is server-only (non-`NEXT_PUBLIC_`, read in a server module imported only by routes) and never sent to the browser. `.env.example` documents variable **names** only; real `.env.local` untouched. Errors surface safe codes — `SESSION_NOT_FOUND`, `SESSION_UNAVAILABLE`, `TURN_CONFLICT`, `INVALID_REQUEST` — never SQL/Supabase internals or stack traces.
+
+### Official API
+`POST /api/interview`, `POST /api/agent`, and `contract.ts` are unchanged; only internal storage wiring changed. Regression coverage asserts the request/response schemas still parse.
+
+### Env variables required (for persistence)
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (+ run `supabase/schema.sql` once). `GEMINI_API_KEY` unchanged.
+
+**Verification:**
+- `npm run lint`: **0 errors, 0 warnings**.
+- `npm test`: **245 / 245 passing** (14 suites; +15 new M19 tests; existing 230 green).
+- `npm run build`: production build **clean**, 26 routes.
+- Manual (in-memory, live server): secure UUID id, refresh recovery, duplicate-submit 409, safe unknown-session 404 — all confirmed. Server-restart survival requires the two Supabase env vars + `schema.sql` (code path proven by the automated persistence/CAS/report-cache tests).
+
+---
+
+## M19.1 — PERSISTENCE PROVIDER SWAP: Supabase → Neon Postgres
+
+Supabase was replaced with **Neon PostgreSQL** (free-tier, no subscription) without redoing M19. All M19 architecture is preserved: opaque UUID session ids, `SessionRepository` abstraction, versioned + Zod-validated state, optimistic-concurrency CAS, duplicate-submit protection, completed-report persistence, candidate-safe DTOs, and safe error codes.
+
+**Provider-specific layer swapped:**
+- Removed: `src/lib/supabase/server-client.ts`, `src/lib/interview/supabase-session-repository.ts`, `supabase/schema.sql`. No runtime code references Supabase anymore. (`@supabase/supabase-js` predated M19 and is now unused — safe to `npm uninstall` if desired.)
+- Added: `src/lib/db/client.ts` (server-only Neon HTTP driver exposing a generic `SqlExecutor`), `src/lib/interview/postgres-session-repository.ts` (`PostgresSessionRepository`, provider-neutral parameterized SQL + CAS), `database/schema.sql` (provider-neutral migration).
+- Driver: `@neondatabase/serverless` (lightweight HTTP driver, ideal for Vercel serverless/cold starts; no pooling). The repository depends only on `SqlExecutor`, so any Postgres provider works later with a one-line change in `db/client.ts`.
+
+**Env:** `DATABASE_URL` (replaces the two `SUPABASE_*` vars). `.env.example` updated with the name only.
+
+**Concurrency:** preserved via `UPDATE interview_sessions SET …, version = $next WHERE id = $id AND version = $expected RETURNING version`; zero rows ⇒ `TURN_CONFLICT`.
+
+**Verification:** `npm run lint` 0/0; `npm test` **245/245** (M19 suite now runs against `PostgresSessionRepository` via a DB-free fake `SqlExecutor`); `npm run build` clean.
