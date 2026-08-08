@@ -4,7 +4,7 @@ import { getSessionRepository } from "@/lib/interview/repository-factory";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const sessionId = searchParams.get("sessionId") || undefined;
+  const sessionId = searchParams.get("sessionId") || searchParams.get("id") || undefined;
   const candidateId = searchParams.get("candidateId") || undefined;
   const scenario = searchParams.get("scenario") || undefined;
 

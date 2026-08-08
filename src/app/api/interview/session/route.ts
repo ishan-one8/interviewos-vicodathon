@@ -4,7 +4,8 @@ import { buildInterviewSessionDTO } from "@/lib/interview/safe-dto";
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionId = request.nextUrl.searchParams.get("id");
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get("id") || searchParams.get("sessionId");
 
     if (!sessionId) {
       return NextResponse.json(

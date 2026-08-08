@@ -789,3 +789,39 @@ Harden InterviewOS for production Vercel deployment, hackathon judging, rate lim
 - `npm test`: **263 / 263 passing** (15 suites; +20 new M20 attack tests; existing 243 green).
 - `npm run build`: production build **clean**, 26 routes.
 
+---
+
+## M21 — PRODUCTION DEPLOYMENT + LIVE VERCEL VERIFICATION
+
+Deployed InterviewOS to Vercel production (`https://interviewos-vicodathon.vercel.app`) with Neon PostgreSQL persistence and live Gemini API integration.
+
+### 1. Vercel Project & Environment Configuration
+- Linked GitHub repository `https://github.com/ishan-one8/interviewos-vicodathon` to Vercel project `sahaayak/interviewos-vicodathon`.
+- Configured production server-side environment variables as sensitive Vercel environment variables:
+  - `GEMINI_API_KEY`: Server-side API key for Gemini 2.5 Flash LLM.
+  - `DATABASE_URL`: Server-side HTTP connection string for Neon PostgreSQL.
+- Both variables are non-public (never exposed via `NEXT_PUBLIC_*`).
+
+### 2. Live Production Deployment Status
+- Production URL: `https://interviewos-vicodathon.vercel.app`
+- Target Deployment: `https://interviewos-vicodathon-q4u58prej-sahaayak.vercel.app`
+- Status: `READY` (`readyState: READY`)
+
+### 3. Live Production Verification Highlights
+- **Homepage & Motion UI**: Dynamic UI renders cleanly, navigation CTA works, security headers verified (`nosniff`, `DENY`, `strict-origin-when-cross-origin`, `Permissions-Policy` camera/mic disabled).
+- **Session Creation**: Created live session returning opaque UUID (`0576c2d2-63f2-48da-b279-ee08fc663f78`), candidate ID omitted.
+- **Gemini Live Adaptation**: Live Gemini generated dynamic questions based on candidate performance; answer evaluation and follow-up generation verified.
+- **Neon Persistence & Recovery**: Restored session state and answered turns across independent serverless calls (`GET /api/interview/session?id=<uuid>`); state preserved in Neon PostgreSQL.
+- **Production Debug Guarding**: All `/api/debug/*` routes returned HTTP **404** on live production URL.
+- **Security & Hardening**: Oversized answers (>5,000 chars) returned HTTP 400 (`INVALID_REQUEST`); unknown UUIDs returned HTTP 404 (`SESSION_NOT_FOUND`).
+- **Official API Contract**: `POST /api/interview` responded with valid production contract schema.
+
+### 4. Production Adjustments Made
+- Updated `src/app/api/interview/session/route.ts` and `src/app/api/interview/report/route.ts` to accept `searchParams.get("id") || searchParams.get("sessionId")` using `new URL(request.url)` for universal Vercel query parameter compatibility.
+
+**Verification:**
+- `npm run lint`: **0 errors, 0 warnings**.
+- `npm test`: **263 / 263 passing** (15 test suites).
+- `npm run build`: production build **clean**, 26 routes.
+
+
