@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 import { getCandidateIntelligence, getCurriculum } from "@/lib/data";
 import { createInterviewSession } from "@/lib/interview/state";
 import { planNextQuestion } from "@/lib/interview/planner";
@@ -7,6 +8,9 @@ import { addQuestion, submitAnswer, attachAssessment } from "@/lib/interview/tra
 import { evaluateCandidateAnswer } from "@/lib/ai/answer-evaluator";
 
 export async function GET(request: NextRequest) {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const scenario = searchParams.get("scenario") || "strong";

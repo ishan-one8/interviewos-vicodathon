@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { submitInterviewAnswer } from "@/lib/interview/orchestrator";
 import { buildInterviewSessionDTO } from "@/lib/interview/safe-dto";
 import { getSessionRepository } from "@/lib/interview/repository-factory";
+import { guardRateLimit } from "@/lib/security/rate-limiter";
+
+const MAX_ANSWER_LENGTH = 5000;
 
 /** Map an orchestrator error into a safe { code, status } pair. */
 function mapSafeError(raw: string | undefined): { code: string; status: number } {
@@ -14,25 +17,38 @@ function mapSafeError(raw: string | undefined): { code: string; status: number }
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimitError = guardRateLimit(request, "interview_turn", 60, 60_000);
+  if (rateLimitError) return rateLimitError;
+
   try {
     const body = await request.json();
     const { sessionId, questionId, answer } = body || {};
 
-    if (!sessionId || typeof sessionId !== "string") {
+    if (!sessionId || typeof sessionId !== "string" || sessionId.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "sessionId is required." },
+        { success: false, error: "INVALID_REQUEST", message: "sessionId is required." },
         { status: 400 }
       );
     }
-    if (!questionId || typeof questionId !== "string") {
+    if (!questionId || typeof questionId !== "string" || questionId.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "questionId is required." },
+        { success: false, error: "INVALID_REQUEST", message: "questionId is required." },
         { status: 400 }
       );
     }
     if (!answer || typeof answer !== "string" || answer.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "answer is required and must be non-empty." },
+        { success: false, error: "INVALID_REQUEST", message: "answer is required and must be non-empty." },
+        { status: 400 }
+      );
+    }
+    if (answer.length > MAX_ANSWER_LENGTH) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "INVALID_REQUEST",
+          message: `Answer exceeds maximum allowed length of ${MAX_ANSWER_LENGTH} characters.`,
+        },
         { status: 400 }
       );
     }

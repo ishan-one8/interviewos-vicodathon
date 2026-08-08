@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 import { submitInterviewAnswer } from "@/lib/interview/orchestrator";
 
 export async function POST(request: NextRequest) {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   try {
     const body = await request.json();
     const { sessionId, questionId, answer } = body;

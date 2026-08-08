@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 import { getInterviewSnapshot, getInternalSnapshot } from "@/lib/interview/orchestrator";
 
 export async function GET(request: NextRequest) {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const sessionId = searchParams.get("sessionId");

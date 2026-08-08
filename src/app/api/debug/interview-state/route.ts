@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 import { getCandidateIntelligence } from "@/lib/data";
 import { createInterviewSession } from "@/lib/interview/state";
 import {
@@ -10,6 +11,9 @@ import { getCompletionStatus } from "@/lib/interview/selectors";
 import { InterviewQuestion } from "@/types/interview";
 
 export async function GET(request: NextRequest) {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const candidateId =

@@ -7,8 +7,12 @@ import { defaultSessionRepository } from "@/lib/interview/session-repository";
 import { createEmptyLedger, addTurnEvidenceToLedger } from "@/lib/interview/evidence";
 import { createEmptyMemory } from "@/lib/interview/memory";
 import { CompetencyDimension } from "@/types/interview";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 
 export async function GET(request: NextRequest) {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   const { searchParams } = new URL(request.url);
   const scenario = searchParams.get("scenario");
   const sessionId = searchParams.get("sessionId");

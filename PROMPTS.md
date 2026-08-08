@@ -745,3 +745,47 @@ Supabase was replaced with **Neon PostgreSQL** (free-tier, no subscription) with
 **Concurrency:** preserved via `UPDATE interview_sessions SET …, version = $next WHERE id = $id AND version = $expected RETURNING version`; zero rows ⇒ `TURN_CONFLICT`.
 
 **Verification:** `npm run lint` 0/0; `npm test` **245/245** (M19 suite now runs against `PostgresSessionRepository` via a DB-free fake `SqlExecutor`); `npm run build` clean.
+
+---
+
+## M20 — PRODUCTION SECURITY + RELIABILITY HARDENING
+
+Harden InterviewOS for production Vercel deployment, hackathon judging, rate limiting, debug route protection, safe error response formatting, payload size caps, secret auditing, and attack resilience without altering M18.2 UI or core engine semantics.
+
+### 1. Centralized Production Debug Route Protection (`src/lib/security/debug-policy.ts`)
+- Implemented `guardDebugRoute()` as a shared production guard across all 13 `/api/debug/*` endpoints.
+- When `NODE_ENV === "production"`, all debug endpoints return HTTP **404** (`{ success: false, error: "NOT_FOUND" }`), preventing public exposure of raw internal state, planner signals, candidate intelligence priors, or debug traces.
+- In `development` and `test` environments, debug endpoints remain accessible for developer inspection.
+
+### 2. Zero-Cost Process-Local Rate Limiting (`src/lib/security/rate-limiter.ts`)
+- Added a lightweight sliding-window IP rate limiter to protect public endpoints (`POST /api/demo/start`, `POST /api/interview`, `POST /api/agent`, `POST /api/interview/turn`).
+- **Architectural Limitations & Trade-offs:** Operates in-memory per Node process / Vercel Serverless Function instance. Serverless lambdas do not share memory across instances; this provides zero-cost burst protection on single instances without paid infrastructure (e.g. Upstash Redis).
+- Generous limits (30 req/min for start, 60 req/min for turns) ensure legitimate hackathon demo traffic is never throttled. Automatically bypassed in `test` environment (`NODE_ENV === "test"`).
+
+### 3. Security Headers (`next.config.ts`)
+- Configured production security headers:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()` explicitly disabling unused browser media and hardware APIs.
+
+### 4. Input Validation & Answer Length Limit
+- Enforced strict Zod validation across API endpoints. Capped candidate answer length at **5,000 characters** in `OfficialApiRequestSchema` and `POST /api/interview/turn`.
+- Aligned UI `<textarea>` in `AnswerComposer.tsx` with `maxLength={5000}` and visual character limit feedback (`/5000 chars`).
+
+### 5. Error Response Sanitization & Failure Resilience
+- Standardized error codes (`INVALID_REQUEST`, `SESSION_NOT_FOUND`, `SESSION_UNAVAILABLE`, `TURN_CONFLICT`, `RATE_LIMITED`, `INTERNAL_ERROR`).
+- Zero stack traces, SQL connection details, or provider internals are returned to clients.
+- Maintained deterministic fallbacks for Gemini question generation, answer evaluation, and report generation so provider outages do not crash active interviews.
+
+### 6. Secret & Client Bundle Audit
+- Audit confirmed `.env.local` is ignored, zero secrets committed, zero `NEXT_PUBLIC_` credential leaks, and no intelligence priors or raw internal ledger objects sent to client-facing DTOs.
+
+### 7. Attack Test Suite (`tests/m20-security-hardening.test.ts`)
+- Created 20 automated attack tests covering malformed JSON, missing/unknown candidates, invalid/unknown UUIDs, empty answers, oversized answers (>5,000 chars), wrong question IDs, duplicate submissions, stale turn submissions, completed session immutability, corrupted state validation, Gemini fallbacks, production debug route blocking, secret redaction, and official API contract regression.
+
+**Verification:**
+- `npm run lint`: **0 errors, 0 warnings**.
+- `npm test`: **263 / 263 passing** (15 suites; +20 new M20 attack tests; existing 243 green).
+- `npm run build`: production build **clean**, 26 routes.
+

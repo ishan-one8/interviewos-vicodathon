@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 import { startAdaptiveInterview } from "@/lib/interview/orchestrator";
 
 export async function POST(request: NextRequest) {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   try {
     const body = await request.json();
     const candidateId = body.candidateId || "CAND-003";

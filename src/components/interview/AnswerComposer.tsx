@@ -61,6 +61,7 @@ export function AnswerComposer({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           disabled={isSubmitting || disabled}
+          maxLength={5000}
           placeholder="Explain your approach, assumptions, and trade-offs..."
           rows={6}
           className="w-full bg-transparent px-4 py-3 text-zinc-100 placeholder-zinc-700 text-sm md:text-base focus:outline-none resize-none leading-relaxed disabled:opacity-50"
@@ -68,7 +69,17 @@ export function AnswerComposer({
 
         <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--border)] text-[11px] text-zinc-600 font-mono">
           <div className="flex items-center gap-3">
-            <span className={answer.length > 0 ? "text-zinc-400" : ""}>{answer.length} chars</span>
+            <span
+              className={
+                answer.length > 4800
+                  ? "text-amber-400 font-semibold"
+                  : answer.length > 0
+                  ? "text-zinc-400"
+                  : ""
+              }
+            >
+              {answer.length}/5000 chars
+            </span>
             <span className="hidden sm:inline-flex items-center gap-1 text-zinc-700">
               <CornerDownLeft className="h-2.5 w-2.5" />
               Cmd+Enter
@@ -77,7 +88,7 @@ export function AnswerComposer({
 
           <button
             type="submit"
-            disabled={!answer.trim() || isSubmitting || disabled}
+            disabled={!answer.trim() || answer.length > 5000 || isSubmitting || disabled}
             className="group relative overflow-hidden px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 text-white text-xs font-medium transition-colors flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
           >
             {isSubmitting ? (

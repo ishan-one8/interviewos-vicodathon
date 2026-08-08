@@ -5,7 +5,11 @@ export const OfficialApiRequestSchema = z
     candidateId: z.string().trim().optional(),
     sessionId: z.string().trim().optional(),
     questionId: z.string().trim().optional(),
-    answer: z.string().trim().optional(),
+    answer: z
+      .string()
+      .trim()
+      .max(5000, "Answer exceeds maximum length of 5000 characters")
+      .optional(),
   })
   .refine((data) => Boolean(data.candidateId || data.sessionId), {
     message:

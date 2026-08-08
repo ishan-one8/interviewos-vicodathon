@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 import { getCurriculum, getCandidates } from "@/lib/data";
 
 export async function GET() {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   try {
     const curriculumResult = getCurriculum();
     const candidateResult = getCandidates();

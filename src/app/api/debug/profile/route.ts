@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 import { getCandidateIntelligence, getCandidates } from "@/lib/data";
 
 export async function GET(request: NextRequest) {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const candidateId = searchParams.get("candidateId") || searchParams.get("id");

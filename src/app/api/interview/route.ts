@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { OfficialApiRequestSchema } from "@/lib/api/contract";
 import { handleOfficialInterviewRequest } from "@/lib/api/request-adapter";
 import { ApiError, formatErrorResponse } from "@/lib/api/errors";
+import { guardRateLimit } from "@/lib/security/rate-limiter";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const rateLimitError = guardRateLimit(req, "official_interview", 60, 60_000);
+  if (rateLimitError) return rateLimitError;
+
   try {
     let rawJson: unknown;
     try {

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { guardDebugRoute } from "@/lib/security/debug-policy";
 import { getCandidateIntelligence, getCurriculum } from "@/lib/data";
 import { createInterviewSession } from "@/lib/interview/state";
 import { planNextQuestion } from "@/lib/interview/planner";
 import { generateInterviewQuestion } from "@/lib/ai/question-generator";
 
 export async function GET(request: NextRequest) {
+  const guarded = guardDebugRoute();
+  if (guarded) return guarded;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const candidateId = searchParams.get("candidateId") || searchParams.get("id") || "CAND-003";
