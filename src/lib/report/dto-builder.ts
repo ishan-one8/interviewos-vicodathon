@@ -44,6 +44,15 @@ export type ReplayTurnItem = {
   isRefinement?: boolean;
 };
 
+export type AdaptationSummary = {
+  followUpCount: number;
+  deepenCount: number;
+  clarifyCount: number;
+  challengeCount: number;
+  newTopicCount: number;
+  topicsExplored: number;
+};
+
 export type CandidateReportDTO = {
   report: InterviewReport;
   scoreExplanations: Record<CompetencyDimension, ScoreExplanation>;
@@ -55,6 +64,7 @@ export type CandidateReportDTO = {
     minimumRequirementsSatisfied: boolean;
     adaptiveEventsCount: number;
   };
+  adaptationSummary: AdaptationSummary;
 };
 
 export async function buildCandidateReportDTO(input: {
@@ -326,10 +336,28 @@ export async function buildCandidateReportDTO(input: {
     adaptiveEventsCount,
   };
 
+  const adaptationSummary: AdaptationSummary = {
+    followUpCount: 0,
+    deepenCount: 0,
+    clarifyCount: 0,
+    challengeCount: 0,
+    newTopicCount: 0,
+    topicsExplored: state.coveredTopics.length,
+  };
+  for (const item of replayTimeline) {
+    const a = item.decisionTrace.action;
+    if (a === "follow_up") adaptationSummary.followUpCount++;
+    else if (a === "deepen") adaptationSummary.deepenCount++;
+    else if (a === "clarify") adaptationSummary.clarifyCount++;
+    else if (a === "challenge") adaptationSummary.challengeCount++;
+    else if (a === "new_topic") adaptationSummary.newTopicCount++;
+  }
+
   return {
     report,
     scoreExplanations,
     replayTimeline,
     judgeTraceSummary,
+    adaptationSummary,
   };
 }

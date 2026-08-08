@@ -56,7 +56,7 @@ export function CompletionState({
           <ArrowRight className="h-4 w-4" />
         </Link>
         <Link
-          href="/interview"
+          href="/demo"
           className="w-full sm:w-auto px-6 py-3 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-sm font-semibold transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-zinc-700"
         >
           <span>Start New Interview</span>

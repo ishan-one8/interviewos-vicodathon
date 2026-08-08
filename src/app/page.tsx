@@ -41,7 +41,7 @@ export default function Home() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <Link
-              href="/interview"
+              href="/demo"
               className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             >
               <span>Start Interview</span>
@@ -224,7 +224,7 @@ export default function Home() {
               </p>
               <div>
                 <Link
-                  href="/interview"
+                  href="/demo"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/30"
                 >
                   <span>Start Technical Interview</span>

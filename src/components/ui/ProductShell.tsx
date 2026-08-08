@@ -6,7 +6,7 @@ import { Brain, ArrowRight, ShieldCheck } from "lucide-react";
 
 interface ProductShellProps {
   children: React.ReactNode;
-  activeRoute?: "home" | "interview" | "about";
+  activeRoute?: "home" | "interview" | "demo" | "about";
 }
 
 export function ProductShell({ children, activeRoute = "home" }: ProductShellProps) {
@@ -51,12 +51,12 @@ export function ProductShell({ children, activeRoute = "home" }: ProductShellPro
             <span className="md:hidden">Ready</span>
           </div>
 
-          {activeRoute !== "interview" && (
+          {activeRoute !== "interview" && activeRoute !== "demo" && (
             <Link
-              href="/interview"
+              href="/demo"
               className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold transition-all shadow-sm shadow-indigo-600/30 flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             >
-              <span>Start Interview</span>
+              <span>Try Demo</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           )}

@@ -11,6 +11,7 @@ import { InterviewReplay } from "@/components/report/InterviewReplay";
 import { ReportSkeleton } from "@/components/report/ReportSkeleton";
 import { InterviewError } from "@/components/interview/InterviewError";
 import { CandidateReportDTO } from "@/lib/report/dto-builder";
+import { AdaptationSummary } from "@/components/report/AdaptationSummary";
 import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 
@@ -78,7 +79,7 @@ function ReportContent() {
           <InterviewError message={error || "Report unavailable."} />
           <div className="text-center">
             <Link
-              href="/interview"
+              href="/demo"
               className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold inline-flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -90,7 +91,7 @@ function ReportContent() {
     );
   }
 
-  const { report, scoreExplanations, replayTimeline, judgeTraceSummary } = dto;
+  const { report, scoreExplanations, replayTimeline, judgeTraceSummary, adaptationSummary } = dto;
 
   return (
     <ProductShell activeRoute="about">
@@ -98,7 +99,7 @@ function ReportContent() {
         {/* Navigation & Controls Row (Hidden in Print) */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 pb-4 print:hidden">
           <Link
-            href="/interview"
+            href="/demo"
             className="text-xs font-mono text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 focus:outline-none"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -184,6 +185,11 @@ function ReportContent() {
               {report.feedback.summary}
             </p>
           </div>
+        )}
+
+        {/* Adaptation Summary */}
+        {(activeTab === "overview") && adaptationSummary && (
+          <AdaptationSummary summary={adaptationSummary} />
         )}
 
         {/* 3. Main Report Content Sections */}

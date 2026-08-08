@@ -3,22 +3,27 @@
 import React from "react";
 import { OfficialQuestion } from "@/lib/api/contract";
 import { InterviewerIdentity } from "./InterviewerIdentity";
-import { Sparkles, Compass, Layers } from "lucide-react";
+import { AdaptiveLabel } from "./AdaptiveLabel";
+import { WhyThisQuestion } from "./WhyThisQuestion";
+import { Compass, Layers } from "lucide-react";
 
 interface QuestionCardProps {
   question: OfficialQuestion;
   questionNumber: number;
-  isFollowUp?: boolean;
   topicChanged?: boolean;
+  adaptiveAction?: string;
+  adaptiveLabel?: string;
+  safeReason?: string;
 }
 
 export function QuestionCard({
   question,
   questionNumber,
-  isFollowUp = false,
   topicChanged = false,
+  adaptiveAction,
+  adaptiveLabel: adaptiveLabelText,
+  safeReason,
 }: QuestionCardProps) {
-  // Format difficulty nicely
   const difficultyLabel =
     question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1);
 
@@ -28,13 +33,10 @@ export function QuestionCard({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/70 pb-4">
         <InterviewerIdentity size="sm" statusText="Active Question" />
 
-        <div className="flex items-center gap-2">
-          {/* Follow-Up Badge (Section 16) */}
-          {isFollowUp && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[11px] font-mono font-medium">
-              <Sparkles className="h-3 w-3 text-indigo-400" />
-              BUILDING ON PREVIOUS ANSWER
-            </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Adaptive Label */}
+          {adaptiveAction && adaptiveLabelText && (
+            <AdaptiveLabel action={adaptiveAction} label={adaptiveLabelText} />
           )}
 
           {/* Safe Metadata Tags */}
@@ -49,7 +51,7 @@ export function QuestionCard({
         </div>
       </div>
 
-      {/* Contextual Transition Divider (Section 17) */}
+      {/* Topic Transition */}
       {topicChanged && (
         <div className="flex items-center gap-2 text-[11px] font-mono text-cyan-400 bg-cyan-950/30 border border-cyan-500/20 px-3 py-1.5 rounded-lg">
           <Layers className="h-3.5 w-3.5" />
@@ -66,6 +68,9 @@ export function QuestionCard({
           {question.text}
         </p>
       </div>
+
+      {/* Why This Question */}
+      {safeReason && <WhyThisQuestion safeReason={safeReason} />}
     </div>
   );
 }

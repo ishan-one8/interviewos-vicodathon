@@ -434,3 +434,47 @@ Build the final deterministic competency scoring engine (`scoring.ts`), evidence
 - `npm test`: **201 / 201 tests passing** across 11 test suites.
 - `npm run build`: Next.js production build compiled cleanly across 18 static & dynamic routes.
 
+---
+
+## Milestone 17 — Demo Flow, Session-Bound Interviews & Adaptive Visibility
+
+**Assisted by:** Claude Opus 4.6
+
+**Goal:**
+Create a judge-friendly demo experience at `/demo`, a session-bound interview route at `/interview/[sessionId]`, visible adaptive-AI indicators during interviews, and report enhancements — all using the SAME real interview engine with no fake demos or hardcoded scores.
+
+**Architectural Decisions:**
+1. **Separate UI API from official contract**: Created new API routes (`/api/demo/candidates`, `/api/demo/start`, `/api/interview/session`, `/api/interview/turn`) that delegate to the same orchestrator but return enriched UI-specific DTOs. The official hackathon contract (`POST /api/interview`) is completely unchanged.
+2. **Safe adaptive context mapping**: Derives user-visible labels ("Follow-up", "Deeper Probe", "Clarification", "Challenge", "New Area") from `InterviewQuestion.action` field — no planner internals exposed. First question shows "Personalized Start" instead of implying prior-answer causation.
+3. **No misleading progress percentage**: The UI shows explicit "Question N · At least 8" and "X curriculum areas explored" instead of a 0-100% bar that could imply a fixed endpoint.
+4. **Completion policy stays in the orchestrator**: `/api/interview/turn` delegates entirely to `submitInterviewAnswer()` and reads the resulting state — no duplicate auto-finish logic in the route.
+5. **Judge-optimized demo page**: Featured CAND-003/CAND-004 profiles surface first with "Try two profiles to see how InterviewOS starts from different learning contexts" — remaining profiles available via expand.
+
+**Key Files:**
+- `src/types/session-dto.ts` — DTO types: `InterviewSessionDTO`, `SafeAdaptiveContext`, `DemoCandidateCard`.
+- `src/lib/interview/safe-dto.ts` — Safe DTO builder and adaptive context mapper.
+- `src/app/demo/page.tsx` — Judge demo entry point with featured candidate cards.
+- `src/app/interview/[sessionId]/page.tsx` — Session-bound interview: lobby → Q&A → completion.
+- `src/app/api/demo/candidates/route.ts` — Safe candidate list (no intelligence, no missions).
+- `src/app/api/demo/start/route.ts` — Session creation via real `startAdaptiveInterview()`.
+- `src/app/api/interview/session/route.ts` — Session state read endpoint returning enriched DTO.
+- `src/app/api/interview/turn/route.ts` — Answer submission via real `submitInterviewAnswer()`.
+- `src/components/interview/SessionLobby.tsx` — Premium session lobby with candidate info and Ari identity.
+- `src/components/interview/AdaptiveLabel.tsx` — Color-coded adaptive action badge.
+- `src/components/interview/WhyThisQuestion.tsx` — Expandable "Why this question?" disclosure.
+- `src/components/report/AdaptationSummary.tsx` — "How InterviewOS Adapted" section on report.
+- `src/app/interview/page.tsx` — Replaced with server-side redirect to `/demo`.
+- `tests/m17-demo-flow.test.ts` — 19-scenario M17 test suite.
+
+**Security Guarantees:**
+- `getCandidates()` never imported in any client component.
+- `InterviewSessionDTO` contains zero fields from `CandidateIntelligenceReport`, `InterviewMemory`, `EvidenceLedger`, or `SkillHypothesis`.
+- Safe adaptive context explanations are deterministic strings — never contain `priorityScore`, `plannerSignals`, `candidateEvidence`, or `reasonForSelection`.
+- Error responses use safe messages — no stack traces returned.
+- Gemini API key remains server-side only.
+
+**Verification:**
+- `npm run lint`: **0 errors, 0 warnings**.
+- `npm test`: **230 / 230 tests passing** across 13 test suites (19 new M17 tests).
+- `npm run build`: Next.js production build compiled cleanly across 26 static & dynamic routes.
+
