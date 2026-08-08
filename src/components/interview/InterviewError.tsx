@@ -13,7 +13,7 @@ export function InterviewError({
   onRetry,
 }: InterviewErrorProps) {
   return (
-    <div className="w-full p-4 rounded-2xl bg-rose-950/30 border border-rose-500/30 text-rose-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+    <div className="w-full p-4 rounded-xl bg-rose-500/5 border border-rose-500/20 text-rose-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in">
       <div className="flex items-center gap-2.5">
         <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
         <span className="font-medium leading-relaxed">{message}</span>
@@ -23,9 +23,9 @@ export function InterviewError({
         <button
           type="button"
           onClick={onRetry}
-          className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-100 text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 focus:outline-none focus:ring-2 focus:ring-rose-400"
+          className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-200 text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 focus:outline-none focus:ring-2 focus:ring-rose-400/50"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
+          <RefreshCw className="h-3 w-3" />
           <span>Try Again</span>
         </button>
       )}

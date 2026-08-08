@@ -12,6 +12,7 @@ import { ReportSkeleton } from "@/components/report/ReportSkeleton";
 import { InterviewError } from "@/components/interview/InterviewError";
 import { CandidateReportDTO } from "@/lib/report/dto-builder";
 import { AdaptationSummary } from "@/components/report/AdaptationSummary";
+import { AuroraBackground } from "@/components/visual/AuroraBackground";
 import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 
@@ -20,7 +21,6 @@ function ReportContent() {
   const sessionId = searchParams.get("sessionId") || undefined;
   const candidateId = searchParams.get("candidateId") || "CAND-003";
   const scenario = searchParams.get("scenario") || undefined;
-  const isJudgeMode = searchParams.get("view") === "judge";
 
   const [dto, setDto] = useState<CandidateReportDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +65,7 @@ function ReportContent() {
   if (isLoading) {
     return (
       <ProductShell activeRoute="about">
-        <main className="flex-1 max-w-6xl mx-auto w-full px-4 md:px-8 py-8">
+        <main className="flex-1 max-w-5xl mx-auto w-full px-4 md:px-8 py-8">
           <ReportSkeleton />
         </main>
       </ProductShell>
@@ -75,15 +75,15 @@ function ReportContent() {
   if (error || !dto) {
     return (
       <ProductShell activeRoute="about">
-        <main className="flex-1 max-w-4xl mx-auto w-full px-4 md:px-8 py-16 space-y-6">
+        <main className="flex-1 max-w-3xl mx-auto w-full px-4 md:px-8 py-16 space-y-6">
           <InterviewError message={error || "Report unavailable."} />
           <div className="text-center">
             <Link
               href="/demo"
-              className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold inline-flex items-center gap-2"
+              className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium inline-flex items-center gap-2"
             >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Return to Interview Lobby</span>
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Return
             </Link>
           </div>
         </main>
@@ -93,95 +93,72 @@ function ReportContent() {
 
   const { report, scoreExplanations, replayTimeline, judgeTraceSummary, adaptationSummary } = dto;
 
+  const adaptationPath = replayTimeline.map((t) => ({
+    label: t.decisionTrace.label,
+    action: t.decisionTrace.action,
+  }));
+
+  const tabs = [
+    { key: "overview" as const, label: "Overview" },
+    { key: "competencies" as const, label: "Competencies" },
+    { key: "topics" as const, label: "Topics" },
+    { key: "strengths" as const, label: "Strengths & Gaps" },
+    { key: "replay" as const, label: "Replay" },
+  ];
+
   return (
     <ProductShell activeRoute="about">
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 md:px-8 py-8 space-y-8 print:p-0 print:m-0">
-        {/* Navigation & Controls Row (Hidden in Print) */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 pb-4 print:hidden">
+      <main className="relative flex-1 w-full print:p-0 print:m-0">
+        <AuroraBackground variant="subtle" grid={false} className="print:hidden" />
+        <div className="relative max-w-5xl mx-auto w-full px-4 md:px-8 py-6 space-y-6">
+        {/* Top bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[var(--border)] print:hidden">
           <Link
             href="/demo"
-            className="text-xs font-mono text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 focus:outline-none"
+            className="text-[11px] font-mono text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1.5 focus:outline-none"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Return to Lobby
+            <ArrowLeft className="h-3 w-3" />
+            Return
           </Link>
 
-          {/* Section Navigation Tabs */}
-          <div className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono">
-            <button
-              type="button"
-              onClick={() => setActiveTab("overview")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === "overview" ? "bg-indigo-600 text-white font-semibold" : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("competencies")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === "competencies" ? "bg-indigo-600 text-white font-semibold" : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Competencies
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("topics")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === "topics" ? "bg-indigo-600 text-white font-semibold" : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Topics
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("strengths")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === "strengths" ? "bg-indigo-600 text-white font-semibold" : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Strengths & Gaps
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("replay")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                activeTab === "replay" ? "bg-indigo-600 text-white font-semibold" : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Interview Replay
-            </button>
+          {/* Tab navigation */}
+          <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[11px] font-mono">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-3 py-1.5 rounded-md transition-colors ${
+                  activeTab === tab.key
+                    ? "bg-indigo-600 text-white font-medium"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            {isJudgeMode && (
-              <span className="px-2.5 py-1 rounded bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[11px] font-mono font-semibold">
-                JUDGE DEMO MODE
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-300 flex items-center gap-1.5 transition-colors focus:outline-none"
-            >
-              <Printer className="h-3.5 w-3.5" />
-              <span>Print Report</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-zinc-700 text-[11px] font-mono text-zinc-500 hover:text-zinc-300 flex items-center gap-1.5 transition-colors focus:outline-none"
+          >
+            <Printer className="h-3 w-3" />
+            Print
+          </button>
         </div>
 
-        {/* 1. Header & Primary Summary Card */}
+        {/* Report header */}
         <ReportHeader report={report} judgeTraceSummary={judgeTraceSummary} />
 
-        {/* 2. Feedback Summary Box (Section 4) */}
+        {/* Feedback summary */}
         {report.feedback && (
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 md:p-8 space-y-3 shadow-xl">
-            <div className="text-xs font-mono text-indigo-400 font-semibold uppercase tracking-wider">
-              Executive Evaluation Summary
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/70 backdrop-blur-sm p-6 space-y-2">
+            <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">
+              Evaluation Summary
             </div>
-            <p className="text-zinc-100 text-sm md:text-base leading-relaxed font-medium">
+            <p className="text-sm text-zinc-200 leading-relaxed">
               {report.feedback.summary}
             </p>
           </div>
@@ -189,10 +166,10 @@ function ReportContent() {
 
         {/* Adaptation Summary */}
         {(activeTab === "overview") && adaptationSummary && (
-          <AdaptationSummary summary={adaptationSummary} />
+          <AdaptationSummary summary={adaptationSummary} path={adaptationPath} />
         )}
 
-        {/* 3. Main Report Content Sections */}
+        {/* Content sections */}
         {(activeTab === "overview" || activeTab === "competencies") && (
           <CompetencyBreakdown
             competencies={report.competencies}
@@ -215,6 +192,7 @@ function ReportContent() {
         {(activeTab === "overview" || activeTab === "replay") && (
           <InterviewReplay replayTimeline={replayTimeline} />
         )}
+        </div>
       </main>
     </ProductShell>
   );

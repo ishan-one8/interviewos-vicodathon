@@ -478,3 +478,202 @@ Create a judge-friendly demo experience at `/demo`, a session-bound interview ro
 - `npm test`: **230 / 230 tests passing** across 13 test suites (19 new M17 tests).
 - `npm run build`: Next.js production build compiled cleanly across 26 static & dynamic routes.
 
+---
+
+## M18 — INTERVIEWOS PRODUCTIZATION + PREMIUM UI OVERHAUL
+
+**Goal:** Transform InterviewOS from a hackathon prototype into a startup-grade product through a complete frontend overhaul. Remove all prototype language, redesign every screen with a premium dark design system, establish consistent design tokens, and make the UI feel like a real adaptive interview platform.
+
+**Prompt excerpt:**
+> "This is the final UI milestone. Transform every screen from 'hackathon project' into 'real adaptive interview product.' Remove all prototype/demo framing, redesign components with premium dark system console aesthetic, add the Interview Intelligence Pipeline diagram, and make every page feel like it belongs to the same product."
+
+**What changed:**
+
+### Design System Foundation
+- Enhanced `globals.css` with CSS custom properties: `--background`, `--surface`, `--surface-raised`, `--border`, `--border-subtle`, `--accent`, `--accent-soft`, `--accent-muted`, `--cyan-signal`, `--text-secondary`, `--text-tertiary`.
+- Added keyframe animations: `signal-flow`, `pipeline-pulse`, `fade-in-up`, `fade-in`, `score-fill`, `stage-progress`.
+- Added `@media (prefers-reduced-motion: reduce)` to disable all animations.
+- Added print styles for report page.
+
+### ProductShell (`ProductShell.tsx`)
+- Replaced Brain/ShieldCheck icons with inline SVG orbit signal mark.
+- CTA: "Experience Interview" (not "Try Demo").
+- Status: "Engine Active" (not "Adaptive Engine Ready").
+- Footer: `InterviewOS — Adaptive Technical Interview Platform`.
+
+### Homepage (`page.tsx`) — Complete Redesign
+- Hero with "ADAPTIVE TECHNICAL INTERVIEWS" eyebrow, "An interview that thinks between your answers." headline.
+- Interview Intelligence Pipeline diagram with 6 animated stages.
+- "How InterviewOS Thinks" section — 4 connected stages (Understand, Adapt, Remember, Explain).
+- "Watch It Adapt" section — illustrative adaptive pipeline example.
+- Bottom CTA: "Ready to experience it?"
+
+### Experience InterviewOS (`demo/page.tsx`)
+- "Experience InterviewOS" eyebrow, "See how the same engine begins differently." heading.
+- No candidate IDs shown anywhere.
+- "Sample Profiles" label, "Same engine · Different starting strategy" callout.
+- Clean candidate cards with radio selection indicators.
+
+### Session Lobby (`SessionLobby.tsx`)
+- "Technical Interview" eyebrow, "Welcome, {firstName}" heading.
+- 2x2 grid: Format, Coverage, Follow-ups, Assessment.
+- "No fixed script. Your answers influence what comes next."
+
+### Ari Identity (`InterviewerIdentity.tsx`)
+- Consistent orbit SVG icon across all components.
+- Cleaner sizing, refined status text.
+
+### Live Interview Console (`interview/[sessionId]/page.tsx`) — THE MOST IMPORTANT SCREEN
+- Redesigned as AI Interview System Console.
+- Top bar with exit link, question count, active status.
+- Desktop grid layout: main interview area + context sidebar.
+- Context rail: Ari identity card, session progress, explored topics.
+- Mobile: progress below answer composer.
+
+### Interview Components
+- `QuestionCard.tsx`: Removed card wrapper, topic transition separators, metadata bar with adaptive label + topic + difficulty, question as dominant element.
+- `AnswerComposer.tsx`: ArrowUp icon, "Submit" button, Cmd+Enter hint, character count.
+- `AdaptiveLabel.tsx`: Dot indicators with color-coded pills.
+- `WhyThisQuestion.tsx`: ChevronDown-only disclosure.
+- `ProcessingState.tsx`: 3-stage intelligence transition with animated pulse dots and shimmer.
+- `InterviewProgress.tsx`: Split into session metrics and explored topics cards.
+- `CompletionState.tsx`: Emerald check, "Interview Complete", question/area counts.
+- `InterviewError.tsx`: Consistent styling with CSS custom properties.
+
+### Report Page (`report/page.tsx`) — Premium Redesign
+- Removed "JUDGE DEMO MODE" badge.
+- Removed `isJudgeMode` logic entirely.
+- Clean tab navigation in surface pill style.
+- Consistent card design across all sections.
+
+### Report Components
+- `ReportHeader.tsx`: Removed candidate ID display, clean score card with level badge, confidence line, 4-stat completion grid.
+- `CompetencyBreakdown.tsx`: Refined horizontal competency rails with "Why?" expand, clean score bars, evidence trace sections.
+- `TopicPerformance.tsx`: Clean topic cards with Strong/Competent/Developing badges.
+- `StrengthsAndGaps.tsx`: Verified Strengths + Development Areas + Recommended Next Steps with numbered items.
+- `InterviewReplay.tsx`: Premium vertical timeline with numbered nodes, decision traces, contradiction events, evidence generated.
+- `AdaptationSummary.tsx`: Grid of adaptive action counts with color-coded numbers.
+- `ReportSkeleton.tsx`: Updated loading skeleton with design tokens.
+
+### Cross-Page Consistency
+- All components use CSS custom properties (`var(--surface)`, `var(--border)`, etc.).
+- Consistent `rounded-xl` border radius (not `rounded-3xl`).
+- Consistent `text-[10px]`/`text-[11px]` font mono for metadata.
+- Consistent spacing and card patterns.
+
+### What was NOT modified (per spec constraints)
+- All engine modules (orchestrator, planner, state machine, evaluator, question generator, memory, evidence ledger, scoring).
+- Official API contract (`/api/interview`, `/api/agent`, `contract.ts`).
+- Safe DTO builders, session architecture, Gemini integration.
+- No voice, video, webcam, auth, billing, dashboard, fake analytics added.
+
+**Files modified (14):**
+1. `src/app/globals.css`
+2. `src/components/ui/ProductShell.tsx`
+3. `src/components/interview/InterviewerIdentity.tsx`
+4. `src/app/page.tsx`
+5. `src/app/demo/page.tsx`
+6. `src/components/interview/SessionLobby.tsx`
+7. `src/components/interview/AdaptiveLabel.tsx`
+8. `src/components/interview/WhyThisQuestion.tsx`
+9. `src/components/interview/QuestionCard.tsx`
+10. `src/components/interview/AnswerComposer.tsx`
+11. `src/components/interview/InterviewProgress.tsx`
+12. `src/components/interview/ProcessingState.tsx`
+13. `src/components/interview/CompletionState.tsx`
+14. `src/components/interview/InterviewError.tsx`
+15. `src/app/interview/[sessionId]/page.tsx`
+16. `src/app/report/page.tsx`
+17. `src/components/report/ReportHeader.tsx`
+18. `src/components/report/CompetencyBreakdown.tsx`
+19. `src/components/report/TopicPerformance.tsx`
+20. `src/components/report/StrengthsAndGaps.tsx`
+21. `src/components/report/InterviewReplay.tsx`
+22. `src/components/report/AdaptationSummary.tsx`
+23. `src/components/report/ReportSkeleton.tsx`
+
+**Verification:**
+- `npm run lint`: **0 errors, 0 warnings**.
+- `npm test`: **230 / 230 tests passing** across 13 test suites.
+- `npm run build`: Next.js production build compiled cleanly.
+- Browser verified: homepage, demo page, report page (header, competencies, topics, strengths, replay timeline).
+
+
+---
+
+## M18.1 — CINEMATIC DYNAMIC UI OVERHAUL
+
+**Goal:** M18 was functionally correct but visually flat, static, and console-like. M18.1 rebuilds the visual + motion layer into a "Midnight Aurora AI System" — depth, layered aurora backgrounds, animated SVG signal paths, parallax, scroll-triggered reveals, and a living ARI identity — without touching any backend logic, engine, API contract, or session behavior.
+
+**Approach:** Pure CSS + lightweight JS (IntersectionObserver, pointer parallax via rAF, `requestAnimationFrame` count-ups, `useSyncExternalStore` for reduced-motion, SMIL for particle motion paths). No animation library installed — avoids risk on the bleeding-edge Next 16 / React 19 stack and keeps the bundle lean.
+
+**Visual system (`globals.css`):** Midnight-navy token palette; aurora blob keyframes (`aurora-drift`), signal-grid + noise overlays, animated gradient text (`.text-aurora`), glass panels, animated gradient borders, edge-glow hover lift, light-beam sweep, float animations, SVG path draw-in (`.draw-path`), focus-glow ring, scroll-reveal (`.reveal`), bar-fill transitions. Full `prefers-reduced-motion` override disabling parallax, continuous motion, and path traversal.
+
+**Motion primitives (`src/components/visual/`):**
+- `AuroraBackground` — layered aurora blobs + signal grid + noise (hero/subtle/panel variants).
+- `Reveal` — IntersectionObserver scroll-reveal wrapper with stagger.
+- `AriCore` — reusable abstract AI identity (concentric rings, orbit nodes, breathing core) with `ready`/`active`/`analyzing`/`complete` states.
+- `AdaptiveCore` — hero centerpiece: ARI core + 6 signal nodes + animated connector paths with SMIL traveling particles + floating micro-panels + mouse parallax.
+- `TypeReveal` — typewriter reveal on scroll-in.
+- `ScoreArc` — animated radial score gauge with count-up.
+- `useInView` — shared in-view hook for count-ups / bar fills.
+
+**Homepage:** cinematic aurora hero with the Adaptive Intelligence Core replacing the static pipeline list; scroll-triggered "How InterviewOS Thinks"; "Watch It Adapt" with animated signal chips + typewriter next-question; ARI-anchored bottom CTA.
+
+**Demo:** aurora backdrop; two premium profile cards with mouse-reactive glow, ARI cores, context-signal strips; "SAME ENGINE / DIFFERENT START" branching divider; on select, a candidate→ARI connection panel reveals "Begin Adaptive Interview".
+
+**Interview:** cinematic lobby (large ARI stage with floating context labels + READY); live console with dominant question, focus-glow answer workspace, and a Live Intelligence Panel (ARI state, current area, interview signal, requirement meters, explored-areas spine); processing sequence with a 3-stage traveling light signal in the same workspace; adaptive badge transitions (verified PERSONALIZED START → DEEPER PROBE live).
+
+**Report:** animated score arc as the climax; count-up competency bars (animate on scroll-in) with evidence dots; "How InterviewOS Adapted" now includes the real adaptive Path Taken map + counts; glowing draw-in replay timeline.
+
+**Constraints honored:** No engine/planner/orchestrator/evaluator/scoring/API/session changes. No voice/video/webcam/auth/billing. No fabricated data — all report visuals bind to real DTO data. No auto-commit.
+
+**Verification:**
+- `npm run lint`: **0 errors, 0 warnings**.
+- `npm test`: **230 / 230 tests passing** across 13 suites (backend untouched).
+- `npm run build`: production build compiled cleanly across 26 routes.
+- Browser verified live: homepage hero + core, demo selection→ARI, interview lobby, live console, processing sequence, adaptive transition (Q1→Q2), and report score arc (88/100) + adaptation path.
+
+---
+
+## M18.2 — LOVABLE-GRADE DYNAMIC PRODUCT EXPERIENCE + UI FUNCTIONAL AUDIT
+
+**Goal:** M18/M18.1 were technically correct but visually flat (too much black, plain rectangles, weak hierarchy, documentation-like). M18.2 recomposes the visual experience into a richer, layered, motion-driven "Midnight Aurora" product — while keeping all engine/API/session logic untouched — and runs a full interactive/link audit.
+
+**Approach:** Still dependency-free (pure CSS + light JS) — lowest risk on Next 16 / React 19, keeps the bundle lean. All motion via transform/opacity/SVG, IntersectionObserver, rAF, and `useSyncExternalStore` for reduced-motion.
+
+### Audit findings & fixes
+- **Dead link removed:** footer `Debug → /api/debug/data` link deleted from the user-facing shell.
+- **Anchors fixed:** `#watch` → `#watch-it-adapt`; added `#showcase`; all nav/footer links now resolve to real section ids (verified: `/`, `/#how-it-works`, `/#watch-it-adapt`, `/#showcase`, `/demo`). No `href="#"`, no no-op buttons.
+- **No user-facing debug/prototype wording or CAND IDs rendered** (CAND-003/004 remain internal-only constants).
+
+### Global atmosphere
+- Body now paints a layered radial-gradient midnight field (indigo/cyan/violet blooms) instead of flat black; fixed attachment for depth.
+- Added a page-level `CursorGlow` that follows the pointer.
+
+### New primitives (`src/components/visual/`)
+`CursorGlow`, `SpotlightCard` (cursor spotlight + optional tilt), `FloatingPanel` (perspective drift), `ProductMockup` (browser-chrome frame), `MotionNumber` (count-up), `ThinkingFlow` (scroll-linked sticky ARI + stages), `ProductShowcase` (layered tilted mockups). Plus CSS utilities: perspective floats, grid drift, spotlight, localized question light, badge signal-sweep, question enter, nav underline, press compression, mobile-menu animation.
+
+### Homepage (recomposed)
+Hero: animated-gradient headline, proof chips (Context-aware · Cross-turn memory · Evidence-backed), and the **Adaptive Intelligence Orbit** — glowing ARI core, 6 signal nodes, animated connectors + SMIL particles, and four **floating product-preview panels** with perspective (FOLLOW-UP, MEMORY, CURRENT AREA, EVIDENCE ADDED). "How It Thinks" is now a **scroll-linked flow** with a sticky ARI core that changes state (ready→active→analyzing→complete) and a live mini-preview per stage. "Watch It Adapt" keeps the typewriter reveal. New **Product Showcase** section with three layered, tilted mockups (interview / report / replay) built from real primitives.
+
+### Demo (recomposed)
+Central ARI core **branches** into Emily and David; selecting a profile **illuminates that branch** (verified live) and the ProfileCards keep cursor-reactive glow + context-signal strips. "View all" grid animates in; every card selectable; no CAND IDs.
+
+### Interview
+Editorial question stage with a localized radial light and a badge **signal-sweep**; question re-keyed so transitions re-fire (blur→focus enter); Live Intelligence Panel with ARI state + animated requirement meters + explored-areas spine; premium focus-glow composer; processing sequence with a traveling light signal (verified: PERSONALIZED START → processing → DEEPER PROBE).
+
+### Report
+Animated score arc (verified 88/100) + **MotionNumber** count-ups on stats (8/4/31/3); "How InterviewOS Adapted" renders the real **Path Taken** map + counts; **interactive replay** — each of the 8 turns is a clickable expander (first open by default; active node glows).
+
+### Mobile
+Working **hamburger menu** (verified: opens, aria state flips, 4 valid links); hero/showcase/thinking-flow stack; floating panels hidden < sm; `overflow-x-hidden` guard; ThinkingFlow shows inline per-stage previews on mobile.
+
+### Accessibility & performance
+Full `prefers-reduced-motion` override (parallax/continuous motion/path-draw disabled, reveals forced visible); keyboard-accessible controls with visible focus rings; transform/opacity-only animations; SMIL particles skipped under reduced motion; CursorGlow skipped on coarse pointers.
+
+**Verification:**
+- `npm run lint`: **0 errors, 0 warnings**.
+- `npm test`: **230 / 230 passing** (13 suites; backend untouched).
+- `npm run build`: production build **clean**, 26 routes.
+- Browser-verified: hero + floating orbit, demo branch illumination (David), report score arc + count-ups, replay interactivity (8 expanders), mobile hamburger + stacked hero. Some below-the-fold checks used DOM inspection due to a preview-pane scroll-capture limitation.

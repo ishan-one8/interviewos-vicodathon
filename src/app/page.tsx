@@ -1,238 +1,218 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { ProductShell } from "@/components/ui/ProductShell";
-import {
-  ArrowRight,
-  Compass,
-  Shield,
-  Layers,
-  Sparkles,
-  CheckCircle2,
-} from "lucide-react";
+import { AuroraBackground } from "@/components/visual/AuroraBackground";
+import { AdaptiveCore } from "@/components/visual/AdaptiveCore";
+import { Reveal } from "@/components/visual/Reveal";
+import { TypeReveal } from "@/components/visual/TypeReveal";
+import { AriCore } from "@/components/visual/AriCore";
+import { ThinkingFlow } from "@/components/visual/ThinkingFlow";
+import { ProductShowcase } from "@/components/visual/ProductShowcase";
+import { ArrowRight, ArrowDown, Sparkles } from "lucide-react";
+
+const PROOF = ["Context-aware", "Cross-turn memory", "Evidence-backed"];
 
 export default function Home() {
   return (
     <ProductShell activeRoute="home">
-      <main className="flex-1 flex flex-col justify-center">
-        {/* Hero Section */}
-        <section className="max-w-6xl mx-auto w-full px-4 md:px-8 py-12 md:py-20 flex flex-col items-center text-center space-y-8">
-          {/* Eyebrow Pill */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-mono font-medium shadow-sm shadow-indigo-500/10">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-            ADAPTIVE TECHNICAL INTERVIEWS
+      <main className="flex-1">
+        {/* ── Hero ── */}
+        <section className="relative overflow-hidden">
+          <AuroraBackground variant="hero" grid />
+          <div className="relative max-w-6xl mx-auto px-4 md:px-8 pt-14 md:pt-24 pb-16 md:pb-28">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 items-center">
+              {/* Left: Copy */}
+              <div className="space-y-6 max-w-xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/5 text-indigo-300 text-[11px] font-mono tracking-wide animate-fade-in-up">
+                  <Sparkles className="h-3 w-3" />
+                  ADAPTIVE INTERVIEW INTELLIGENCE
+                </div>
+
+                <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight text-zinc-50 leading-[1.06] animate-fade-in-up" style={{ animationDelay: "80ms" }}>
+                  An interview that
+                  <br />
+                  thinks{" "}
+                  <span className="text-aurora">between your answers.</span>
+                </h1>
+
+                <p className="text-base md:text-lg text-zinc-400 leading-relaxed max-w-md animate-fade-in-up" style={{ animationDelay: "160ms" }}>
+                  InterviewOS adapts every technical interview using candidate context,
+                  live response signals, cross-turn memory, and evidence-backed evaluation.
+                </p>
+
+                {/* proof chips */}
+                <div className="flex flex-wrap items-center gap-2 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+                  {PROOF.map((p) => (
+                    <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)]/60 px-2.5 py-1 text-[11px] text-zinc-400 backdrop-blur-sm">
+                      <span className="h-1 w-1 rounded-full bg-cyan-400" />
+                      {p}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start gap-3 pt-2 animate-fade-in-up" style={{ animationDelay: "240ms" }}>
+                  <Link
+                    href="/demo"
+                    className="group relative overflow-hidden press px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 shadow-lg shadow-indigo-600/25"
+                  >
+                    <span className="beam" />
+                    <span className="relative">Experience InterviewOS</span>
+                    <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                  <a
+                    href="#watch-it-adapt"
+                    className="press px-5 py-3 rounded-xl border border-[var(--border)] hover:border-indigo-500/40 text-zinc-400 hover:text-zinc-200 text-sm transition-colors flex items-center gap-2 backdrop-blur-sm"
+                  >
+                    Watch It Adapt
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Right: Adaptive Intelligence Orbit */}
+              <div className="relative animate-fade-in min-h-[360px] flex items-center justify-center" style={{ animationDelay: "300ms" }}>
+                <AdaptiveCore />
+              </div>
+            </div>
           </div>
+        </section>
 
-          {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-zinc-100 max-w-3xl leading-[1.15]">
-            An interview that thinks <br className="hidden sm:inline" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-indigo-400 to-cyan-300">
-              between your answers.
-            </span>
-          </h1>
+        {/* ── How InterviewOS Thinks ── */}
+        <section id="how-it-works" className="relative border-t border-[var(--border-subtle)] py-20 md:py-28 px-4 md:px-8 scroll-mt-20">
+          <AuroraBackground variant="subtle" grid={false} />
+          <div className="relative max-w-6xl mx-auto">
+            <Reveal className="text-center space-y-3 mb-14">
+              <div className="text-[11px] font-mono text-indigo-400 tracking-widest uppercase">
+                How InterviewOS Thinks
+              </div>
+              <h2 className="text-2xl md:text-4xl font-bold text-zinc-50 tracking-tight">
+                One continuous adaptive system.
+              </h2>
+              <p className="text-sm md:text-base text-zinc-500 max-w-lg mx-auto">
+                Not four isolated steps — a connected intelligence pipeline that operates
+                across every turn. Scroll to watch it move.
+              </p>
+            </Reveal>
 
-          {/* Truthful Supporting Copy */}
-          <p className="text-base sm:text-lg text-zinc-400 max-w-2xl leading-relaxed">
-            InterviewOS uses candidate learning history, adaptive questioning,
-            evidence-backed evaluation, and deterministic interview guardrails to
-            conduct personalized technical interviews.
-          </p>
+            <ThinkingFlow />
+          </div>
+        </section>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+        {/* ── Watch It Adapt ── */}
+        <section id="watch-it-adapt" className="relative border-t border-[var(--border-subtle)] py-20 md:py-28 px-4 md:px-8 overflow-hidden scroll-mt-20">
+          <AuroraBackground variant="panel" grid />
+          <div className="relative max-w-5xl mx-auto">
+            <Reveal className="text-center space-y-3 mb-14">
+              <div className="text-[11px] font-mono text-cyan-400 tracking-widest uppercase">
+                Watch It Adapt
+              </div>
+              <h2 className="text-2xl md:text-4xl font-bold text-zinc-50 tracking-tight">
+                One signal reshapes the next question.
+              </h2>
+              <p className="text-sm md:text-base text-zinc-500 max-w-lg mx-auto">
+                A live look at how a single candidate response routes through the adaptive pipeline.
+              </p>
+            </Reveal>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-4 items-center">
+              {/* Left: candidate answer */}
+              <Reveal>
+                <div className="gradient-border rounded-2xl p-6 bg-[var(--surface)]/80 backdrop-blur-sm edge-glow">
+                  <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-wider mb-3">
+                    Candidate Response
+                  </div>
+                  <p className="text-base text-zinc-100 italic leading-relaxed">
+                    &ldquo;I would inspect the retrieved chunks before changing the model.&rdquo;
+                  </p>
+                </div>
+              </Reveal>
+
+              {/* Center: signal analysis */}
+              <Reveal delay={120} className="flex lg:flex-col items-center justify-center gap-2 py-2">
+                {[
+                  { label: "Retrieval Reasoning", color: "text-indigo-300", dot: "#818cf8" },
+                  { label: "Strong Signal", color: "text-cyan-300", dot: "#22d3ee" },
+                  { label: "Deeper Probe", color: "text-violet-300", dot: "#a78bfa" },
+                ].map((step, i) => (
+                  <React.Fragment key={step.label}>
+                    <div className="flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5 backdrop-blur-md">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: step.dot, boxShadow: `0 0 8px ${step.dot}` }} />
+                      <span className={`text-[11px] font-mono ${step.color}`}>{step.label}</span>
+                    </div>
+                    {i < 2 && <ArrowDown className="hidden lg:block h-4 w-4 text-zinc-700" />}
+                    {i < 2 && <ArrowRight className="lg:hidden h-4 w-4 text-zinc-700" />}
+                  </React.Fragment>
+                ))}
+              </Reveal>
+
+              {/* Right: Ari's next question */}
+              <Reveal delay={240}>
+                <div className="rounded-2xl p-6 border border-cyan-500/20 bg-cyan-500/[0.04] backdrop-blur-sm relative overflow-hidden">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AriCore state="analyzing" size={26} />
+                    <span className="text-[11px] font-mono text-zinc-500">Ari&apos;s Next Question</span>
+                  </div>
+                  <p className="text-base text-zinc-50 font-medium leading-relaxed min-h-[3.5rem]">
+                    <TypeReveal text="How would you distinguish an embedding-quality issue from an index-recall problem?" />
+                  </p>
+                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-cyan-500/20 bg-cyan-500/5 px-2 py-1 text-[10px] font-mono text-cyan-300 uppercase tracking-wide">
+                    <span className="h-1 w-1 rounded-full bg-cyan-400" />
+                    Evidence Ledger · reasoning captured
+                  </div>
+                </div>
+              </Reveal>
+            </div>
+
+            <p className="text-center text-[11px] text-zinc-600 font-mono mt-10">
+              Illustrative example showing how the adaptive pipeline responds to candidate signals.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Product Showcase ── */}
+        <section id="showcase" className="relative border-t border-[var(--border-subtle)] py-20 md:py-28 px-4 md:px-8 overflow-hidden scroll-mt-20">
+          <AuroraBackground variant="subtle" grid={false} />
+          <div className="relative max-w-6xl mx-auto">
+            <Reveal className="text-center space-y-3 mb-14">
+              <div className="text-[11px] font-mono text-violet-400 tracking-widest uppercase">
+                One System, End to End
+              </div>
+              <h2 className="text-2xl md:text-4xl font-bold text-zinc-50 tracking-tight">
+                Interview, evidence, and replay — connected.
+              </h2>
+              <p className="text-sm md:text-base text-zinc-500 max-w-lg mx-auto">
+                Every surface is generated by the same engine, from the adaptive question to the evidence-backed report.
+              </p>
+            </Reveal>
+
+            <Reveal>
+              <ProductShowcase />
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ── Bottom CTA ── */}
+        <section className="relative border-t border-[var(--border-subtle)] py-20 md:py-24 px-4 md:px-8 overflow-hidden">
+          <AuroraBackground variant="subtle" grid={false} />
+          <Reveal className="relative max-w-2xl mx-auto text-center space-y-6">
+            <AriCore state="ready" size={72} className="mx-auto" />
+            <h2 className="text-2xl md:text-3xl font-bold text-zinc-50">
+              Ready to experience it?
+            </h2>
+            <p className="text-sm md:text-base text-zinc-500 max-w-md mx-auto">
+              Start an adaptive technical interview with a sample profile. Every question, evaluation, and report is generated by the real engine.
+            </p>
             <Link
               href="/demo"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="group relative overflow-hidden press inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400/50 shadow-lg shadow-indigo-600/25"
             >
-              <span>Start Interview</span>
-              <ArrowRight className="h-4 w-4" />
+              <span className="beam" />
+              <span className="relative">Experience InterviewOS</span>
+              <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-
-            <a
-              href="#how-it-works"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 text-zinc-300 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              See How It Works
-            </a>
-          </div>
-
-          {/* Hero Visual: Product-Native Pipeline Visualization (Section 6) */}
-          <div className="w-full max-w-4xl pt-8">
-            <div className="p-6 md:p-8 rounded-2xl border border-zinc-800/90 bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 shadow-2xl shadow-black/60 space-y-6">
-              <div className="flex items-center justify-between border-b border-zinc-800/60 pb-4 text-xs font-mono text-zinc-400">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-indigo-400" />
-                  <span>InterviewOS Live Pipeline Flow</span>
-                </div>
-                <span>Deterministic State Machine Engine</span>
-              </div>
-
-              {/* Animated Interactive Pipeline Diagram */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-left">
-                {/* Step 1 */}
-                <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/70 space-y-2 relative group hover:border-indigo-500/40 transition-colors">
-                  <div className="text-[10px] font-mono text-indigo-400 font-semibold uppercase">
-                    01 • Candidate Context
-                  </div>
-                  <div className="font-semibold text-sm text-zinc-200">Learning History</div>
-                  <p className="text-[11px] text-zinc-400 leading-normal">
-                    Loads completed missions, retry patterns, and skipped curriculum days.
-                  </p>
-                </div>
-
-                {/* Step 2 */}
-                <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/70 space-y-2 relative group hover:border-indigo-500/40 transition-colors">
-                  <div className="text-[10px] font-mono text-indigo-400 font-semibold uppercase">
-                    02 • Question Strategy
-                  </div>
-                  <div className="font-semibold text-sm text-zinc-200">Adaptive Planner</div>
-                  <p className="text-[11px] text-zinc-400 leading-normal">
-                    Selects topic, curriculum day, and difficulty based on performance signals.
-                  </p>
-                </div>
-
-                {/* Step 3 */}
-                <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/70 space-y-2 relative group hover:border-indigo-500/40 transition-colors">
-                  <div className="text-[10px] font-mono text-indigo-400 font-semibold uppercase">
-                    03 • Live Answer
-                  </div>
-                  <div className="font-semibold text-sm text-zinc-200">Answer Intelligence</div>
-                  <p className="text-[11px] text-zinc-400 leading-normal">
-                    Evaluates correctness, depth, reasoning, and claims against evidence ledger.
-                  </p>
-                </div>
-
-                {/* Step 4 */}
-                <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/70 space-y-2 relative group hover:border-indigo-500/40 transition-colors">
-                  <div className="text-[10px] font-mono text-indigo-400 font-semibold uppercase">
-                    04 • Adaptive Follow-up
-                  </div>
-                  <div className="font-semibold text-sm text-zinc-200">Evidence Aggregation</div>
-                  <p className="text-[11px] text-zinc-400 leading-normal">
-                    Escalates difficulty on strength or probes foundation on partial answers.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Homepage Product Proof Section (Section 33) */}
-        <section id="how-it-works" className="border-t border-zinc-900 bg-zinc-950/60 py-16 px-4 md:px-8">
-          <div className="max-w-5xl mx-auto space-y-12">
-            <div className="text-center space-y-3">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-100 tracking-tight">
-                How InterviewOS Evaluates Engineers
-              </h2>
-              <p className="text-sm text-zinc-400 max-w-lg mx-auto">
-                A 4-step evidence pipeline operating under strict deterministic guardrails.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Proof Step 1 */}
-              <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-3">
-                <div className="h-9 w-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-mono font-bold text-sm">
-                  1
-                </div>
-                <h3 className="font-semibold text-base text-zinc-100">Understands Candidate Background</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Analyzes cohort data, completed curriculum missions, retry days, and skipped topics to form initial topic preferences without guessing skills.
-                </p>
-              </div>
-
-              {/* Proof Step 2 */}
-              <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-3">
-                <div className="h-9 w-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-mono font-bold text-sm">
-                  2
-                </div>
-                <h3 className="font-semibold text-base text-zinc-100">Plans the Right Question Strategy</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Decides target topic, curriculum day, action (new topic, deepen, probe, challenge), and difficulty level using a deterministic scoring engine.
-                </p>
-              </div>
-
-              {/* Proof Step 3 */}
-              <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-3">
-                <div className="h-9 w-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-mono font-bold text-sm">
-                  3
-                </div>
-                <h3 className="font-semibold text-base text-zinc-100">Learns & Adapts From Each Answer</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Extracts technical claims, tracks cross-turn memory, flags contradictions, and updates the evidence ledger after every single response.
-                </p>
-              </div>
-
-              {/* Proof Step 4 */}
-              <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-3">
-                <div className="h-9 w-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-mono font-bold text-sm">
-                  4
-                </div>
-                <h3 className="font-semibold text-base text-zinc-100">Produces Evidence-Backed Reports</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Aggregates competency scores across 5 dimensions with complete evidence provenance, strengths, development areas, and actionable feedback.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* System Capabilities Section (Section 7) */}
-        <section id="capabilities" className="border-t border-zinc-900 py-16 px-4 md:px-8">
-          <div className="max-w-5xl mx-auto space-y-12">
-            <div className="text-center space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 text-xs font-mono">
-                <Shield className="h-3.5 w-3.5" />
-                SYSTEM GUARANTEES
-              </div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-100 tracking-tight">
-                Built for Technical Rigor
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="p-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 space-y-3">
-                <Compass className="h-6 w-6 text-indigo-400" />
-                <h3 className="font-semibold text-sm text-zinc-100">Adaptive Questioning</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Questions naturally deepen when candidates excel and probe foundations when responses are partial or unclear.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 space-y-3">
-                <Layers className="h-6 w-6 text-cyan-400" />
-                <h3 className="font-semibold text-sm text-zinc-100">Curriculum Coverage</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Mandatory state-machine rules enforce at least 8 questions across at least 4 unique AI curriculum days before completion.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 space-y-3">
-                <CheckCircle2 className="h-6 w-6 text-emerald-400" />
-                <h3 className="font-semibold text-sm text-zinc-100">Evidence-Backed Feedback</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Every score and evaluation finding links directly back to specific answer turn IDs and verified evidence entries.
-                </p>
-              </div>
-            </div>
-
-            {/* Direct CTA Panel */}
-            <div className="p-8 rounded-3xl border border-zinc-800 bg-gradient-to-r from-zinc-900 via-indigo-950/20 to-zinc-900 text-center space-y-4">
-              <h3 className="text-xl font-bold text-zinc-100">Ready to Experience InterviewOS?</h3>
-              <p className="text-xs text-zinc-400 max-w-md mx-auto">
-                Launch an interactive interview session with Ari to test adaptive AI questioning live.
-              </p>
-              <div>
-                <Link
-                  href="/demo"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/30"
-                >
-                  <span>Start Technical Interview</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </div>
+          </Reveal>
         </section>
       </main>
     </ProductShell>

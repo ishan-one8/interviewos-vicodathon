@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { InterviewerIdentity } from "./InterviewerIdentity";
-import { ArrowRight, Shield } from "lucide-react";
+import { AriCore } from "@/components/visual/AriCore";
+import { ArrowRight } from "lucide-react";
 
 interface SessionLobbyProps {
   candidateName: string;
@@ -11,6 +11,13 @@ interface SessionLobbyProps {
   isStarting: boolean;
 }
 
+const CONTEXT_LABELS = [
+  { label: "8+ Adaptive Questions", top: "4%", left: "2%", delay: "0s", color: "text-indigo-300" },
+  { label: "4+ Curriculum Areas", top: "10%", right: "2%", delay: "-1.5s", color: "text-cyan-300" },
+  { label: "Cross-turn Memory", bottom: "8%", left: "4%", delay: "-2.4s", color: "text-violet-300" },
+  { label: "Evidence-backed Assessment", bottom: "2%", right: "3%", delay: "-3.1s", color: "text-emerald-300" },
+];
+
 export function SessionLobby({
   candidateName,
   candidateRole,
@@ -18,73 +25,72 @@ export function SessionLobby({
   isStarting,
 }: SessionLobbyProps) {
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-8 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
-      {/* Header */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 text-xs font-mono font-medium">
-          <Shield className="h-3.5 w-3.5" />
-          Session Ready
-        </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-100">
-          Technical Interview
-        </h1>
-        <p className="text-sm text-zinc-400">
-          Adaptive evaluation for <span className="text-zinc-200 font-medium">{candidateName}</span>
-          <span className="text-zinc-500"> &middot; </span>
-          <span className="text-zinc-300">{candidateRole}</span>
-        </p>
-      </div>
-
-      {/* Interview Info Card */}
-      <div className="p-6 md:p-8 rounded-2xl border border-zinc-800 bg-zinc-900/60 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-5">
-          <InterviewerIdentity size="md" statusText="Senior AI Systems Interviewer" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60">
-            <div className="text-zinc-400 text-[10px]">Format</div>
-            <div className="text-zinc-200 font-semibold">8-12 Questions</div>
-          </div>
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60">
-            <div className="text-zinc-400 text-[10px]">Curriculum</div>
-            <div className="text-zinc-200 font-semibold">AI Engineering</div>
-          </div>
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60">
-            <div className="text-zinc-400 text-[10px]">Coverage</div>
-            <div className="text-zinc-200 font-semibold">4+ Areas</div>
-          </div>
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60">
-            <div className="text-zinc-400 text-[10px]">Adaptive</div>
-            <div className="text-zinc-200 font-semibold">Real-time</div>
-          </div>
-        </div>
-
-        <p className="text-xs text-zinc-400 italic text-center">
-          &quot;Your answers influence the questions that follow.&quot;
-        </p>
-
-        <div className="flex justify-center pt-2">
-          <button
-            type="button"
-            onClick={onBegin}
-            disabled={isStarting}
-            className="px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+    <div className="w-full max-w-2xl mx-auto text-center animate-fade-in">
+      {/* ARI stage with floating context labels */}
+      <div className="relative mx-auto mb-8 h-64 w-full max-w-md">
+        {CONTEXT_LABELS.map((c) => (
+          <div
+            key={c.label}
+            className="float-slow absolute"
+            style={{ top: c.top, bottom: c.bottom, left: c.left, right: c.right, animationDelay: c.delay }}
           >
-            {isStarting ? (
-              <>
-                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Preparing...</span>
-              </>
-            ) : (
-              <>
-                <span>Begin Interview</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
+            <span className={`rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-mono backdrop-blur-md shadow-lg shadow-black/40 ${c.color}`}>
+              {c.label}
+            </span>
+          </div>
+        ))}
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <AriCore state="ready" size={128} />
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-base font-semibold text-zinc-100">Ari</span>
+            <span className="text-[10px] font-mono uppercase tracking-wide px-1.5 py-px rounded bg-zinc-800/60 text-zinc-500 border border-zinc-700/40">
+              AI Systems Interviewer
+            </span>
+          </div>
+          <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+            </span>
+            READY
+          </div>
         </div>
       </div>
+
+      {/* Welcome copy */}
+      <div className="space-y-2 mb-8">
+        <div className="text-[10px] font-mono text-indigo-400 uppercase tracking-widest">
+          Technical Interview
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-50">
+          Welcome, {candidateName.split(" ")[0]}
+        </h1>
+        <p className="text-sm text-zinc-500">{candidateRole}</p>
+        <p className="text-sm text-zinc-400 max-w-sm mx-auto pt-2 leading-relaxed">
+          No fixed script. Your answers influence what comes next.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onBegin}
+        disabled={isStarting}
+        className="group relative overflow-hidden px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center gap-2 mx-auto focus:outline-none focus:ring-2 focus:ring-indigo-400/50 shadow-lg shadow-indigo-600/25"
+      >
+        {isStarting ? (
+          <>
+            <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span>Preparing...</span>
+          </>
+        ) : (
+          <>
+            <span className="beam" />
+            <span className="relative">Begin Interview</span>
+            <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </>
+        )}
+      </button>
     </div>
   );
 }

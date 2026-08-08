@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, CornerDownLeft } from "lucide-react";
+import { ArrowUp, CornerDownLeft } from "lucide-react";
 
 interface AnswerComposerProps {
   onSubmitAnswer: (answer: string) => void;
@@ -15,9 +15,9 @@ export function AnswerComposer({
   disabled = false,
 }: AnswerComposerProps) {
   const [answer, setAnswer] = useState("");
+  const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-focus on mount
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
@@ -26,12 +26,10 @@ export function AnswerComposer({
     if (e) e.preventDefault();
     const trimmed = answer.trim();
     if (!trimmed || isSubmitting || disabled) return;
-
     onSubmitAnswer(trimmed);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Submit on Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux)
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       handleSubmit();
@@ -39,44 +37,58 @@ export function AnswerComposer({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-3">
-      <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/90 shadow-lg shadow-black/30 focus-within:border-indigo-500/80 focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all">
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="focus-glow relative rounded-2xl border border-[var(--border)] bg-[var(--surface)]/70 backdrop-blur-sm transition-all duration-300">
+        {/* Active typing accent bar */}
+        <div
+          className="absolute left-0 top-4 bottom-4 w-0.5 rounded-full transition-all duration-300"
+          style={{
+            background: focused || answer ? "linear-gradient(to bottom, #8b5cf6, #22d3ee)" : "transparent",
+            opacity: focused || answer ? 1 : 0,
+          }}
+        />
+
+        <div className="flex items-center gap-2 px-4 pt-3.5 text-[10px] font-mono text-zinc-600 uppercase tracking-wider">
+          <span className="h-1 w-1 rounded-full bg-indigo-400" />
+          Your Response
+        </div>
+
         <textarea
           ref={textareaRef}
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           disabled={isSubmitting || disabled}
-          placeholder="Explain your approach, reasoning, and trade-offs…"
-          rows={5}
-          className="w-full bg-transparent px-4 py-3.5 text-zinc-100 placeholder-zinc-500 text-sm md:text-base focus:outline-none resize-none leading-relaxed disabled:opacity-60"
+          placeholder="Explain your approach, assumptions, and trade-offs..."
+          rows={6}
+          className="w-full bg-transparent px-4 py-3 text-zinc-100 placeholder-zinc-700 text-sm md:text-base focus:outline-none resize-none leading-relaxed disabled:opacity-50"
         />
 
-        {/* Bottom Toolbar inside textarea box */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-zinc-800/60 text-xs text-zinc-500 font-mono">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--border)] text-[11px] text-zinc-600 font-mono">
           <div className="flex items-center gap-3">
-            <span>{answer.length} characters</span>
-            <span className="hidden sm:inline-block text-zinc-700">•</span>
-            <span className="hidden sm:inline-flex items-center gap-1 text-zinc-400">
-              <CornerDownLeft className="h-3 w-3" />
-              Cmd + Enter to submit
+            <span className={answer.length > 0 ? "text-zinc-400" : ""}>{answer.length} chars</span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-zinc-700">
+              <CornerDownLeft className="h-2.5 w-2.5" />
+              Cmd+Enter
             </span>
           </div>
 
           <button
             type="submit"
             disabled={!answer.trim() || isSubmitting || disabled}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white text-xs font-semibold transition-all flex items-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="group relative overflow-hidden px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 text-white text-xs font-medium transition-colors flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
           >
             {isSubmitting ? (
               <>
-                <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Evaluating...</span>
+                <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Evaluating</span>
               </>
             ) : (
               <>
-                <span>Submit Answer</span>
-                <Send className="h-3.5 w-3.5" />
+                <span className="relative">Submit</span>
+                <ArrowUp className="relative h-3 w-3 transition-transform group-hover:-translate-y-0.5" />
               </>
             )}
           </button>

@@ -2,10 +2,8 @@
 
 import React from "react";
 import { OfficialQuestion } from "@/lib/api/contract";
-import { InterviewerIdentity } from "./InterviewerIdentity";
 import { AdaptiveLabel } from "./AdaptiveLabel";
 import { WhyThisQuestion } from "./WhyThisQuestion";
-import { Compass, Layers } from "lucide-react";
 
 interface QuestionCardProps {
   question: OfficialQuestion;
@@ -28,48 +26,39 @@ export function QuestionCard({
     question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1);
 
   return (
-    <div className="w-full bg-zinc-900/70 border border-zinc-800/90 rounded-2xl p-6 space-y-5 shadow-xl shadow-black/40 relative overflow-hidden transition-all">
-      {/* Top Header Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/70 pb-4">
-        <InterviewerIdentity size="sm" statusText="Active Question" />
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Adaptive Label */}
-          {adaptiveAction && adaptiveLabelText && (
-            <AdaptiveLabel action={adaptiveAction} label={adaptiveLabelText} />
-          )}
-
-          {/* Safe Metadata Tags */}
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[11px] font-mono">
-            <Compass className="h-3 w-3 text-zinc-400" />
-            {question.topic}
-          </span>
-
-          <span className="px-2.5 py-1 rounded-md bg-zinc-800/50 border border-zinc-700/40 text-zinc-400 text-[11px] font-mono capitalize">
-            {difficultyLabel}
-          </span>
-        </div>
-      </div>
-
-      {/* Topic Transition */}
+    <div className="relative q-light q-enter space-y-5">
+      {/* Topic transition */}
       {topicChanged && (
-        <div className="flex items-center gap-2 text-[11px] font-mono text-cyan-400 bg-cyan-950/30 border border-cyan-500/20 px-3 py-1.5 rounded-lg">
-          <Layers className="h-3.5 w-3.5" />
-          <span>Transitioning topic focus to: {question.topic}</span>
+        <div className="flex items-center gap-2 text-[10px] font-mono text-cyan-400 uppercase tracking-wider">
+          <div className="h-px flex-1 bg-cyan-500/20" />
+          <span>New area: {question.topic}</span>
+          <div className="h-px flex-1 bg-cyan-500/20" />
         </div>
       )}
 
-      {/* Question Text */}
+      {/* Metadata: strong adaptive badge + context */}
+      <div className="flex flex-wrap items-center gap-3">
+        {adaptiveAction && adaptiveLabelText && (
+          <span className="relative overflow-hidden rounded-md badge-sweep">
+            <AdaptiveLabel action={adaptiveAction} label={adaptiveLabelText} />
+          </span>
+        )}
+        <span className="text-[10px] font-mono text-zinc-500">{question.topic}</span>
+        <span className="text-[10px] font-mono text-zinc-700">&middot;</span>
+        <span className="text-[10px] font-mono text-zinc-500 capitalize">{difficultyLabel}</span>
+      </div>
+
+      {/* Question — editorial */}
       <div className="space-y-2">
-        <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">
+        <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
           Question {questionNumber}
         </div>
-        <p className="text-zinc-100 text-base md:text-lg font-medium leading-relaxed tracking-tight">
+        <p className="text-zinc-50 text-xl md:text-[1.7rem] font-semibold leading-[1.3] tracking-tight max-w-2xl">
           {question.text}
         </p>
       </div>
 
-      {/* Why This Question */}
+      {/* Why this question */}
       {safeReason && <WhyThisQuestion safeReason={safeReason} />}
     </div>
   );

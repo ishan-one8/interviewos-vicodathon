@@ -2,7 +2,9 @@
 
 import React from "react";
 import { InterviewReport } from "@/types/interview";
-import { Award, CheckCircle2, ShieldCheck, Calendar } from "lucide-react";
+import { ScoreArc } from "@/components/visual/ScoreArc";
+import { MotionNumber } from "@/components/visual/MotionNumber";
+import { CheckCircle2, Calendar } from "lucide-react";
 
 interface ReportHeaderProps {
   report: InterviewReport;
@@ -18,115 +20,80 @@ interface ReportHeaderProps {
 export function ReportHeader({ report, judgeTraceSummary }: ReportHeaderProps) {
   const isProvisional = report.reportStatus === "provisional";
 
-  // Confidence explanation
   const confidencePercent = Math.round(report.overall.confidence * 100);
   const confidenceLabel =
     report.overall.confidence >= 0.8
-      ? "High Confidence"
+      ? "High"
       : report.overall.confidence >= 0.5
-      ? "Moderate Confidence"
-      : "Low Confidence";
+      ? "Moderate"
+      : "Low";
 
-  const confidenceExplanation = `Based on ${report.completion.questionsAnswered} questions across ${report.completion.curriculumDaysCovered.length} curriculum areas.`;
+  const stats = [
+    { label: "Questions", value: report.completion.questionsAnswered, accent: "text-zinc-100" },
+    { label: "Curriculum Days", value: report.completion.curriculumDaysCovered.length, accent: "text-zinc-100" },
+    { label: "Topics", value: report.topicResults.length, accent: "text-zinc-100" },
+    { label: "Adaptive Events", value: judgeTraceSummary?.adaptiveEventsCount || 0, accent: "text-indigo-400" },
+  ];
 
   return (
-    <div className="w-full bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-zinc-950 border border-zinc-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl shadow-black/50 relative overflow-hidden">
-      {/* Top Status Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
-        <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
-          <ShieldCheck className="h-4 w-4 text-indigo-400" />
-          <span>InterviewOS • Technical Evaluation Report</span>
-        </div>
+    <div className="relative w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/70 backdrop-blur-sm p-6 md:p-8">
+      {/* soft top glow */}
+      <div
+        className="pointer-events-none absolute -top-24 left-1/2 h-48 w-3/4 -translate-x-1/2 rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(99,102,241,0.16), transparent 70%)", filter: "blur(30px)" }}
+      />
 
-        <div className="flex items-center gap-2 font-mono text-xs">
+      <div className="relative">
+        {/* Status bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-[var(--border)]">
+          <div className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest">
+            Interview Complete
+          </div>
           {isProvisional ? (
-            <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold">
-              PROVISIONAL REPORT
+            <span className="px-2.5 py-1 rounded-md bg-amber-500/8 border border-amber-500/20 text-amber-400 text-[10px] font-mono">
+              Provisional
             </span>
           ) : (
-            <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              VERIFIED FINAL REPORT
+            <span className="px-2.5 py-1 rounded-md bg-emerald-500/8 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              Final Report
             </span>
           )}
         </div>
-      </div>
 
-      {/* Main Header Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-        {/* Candidate Info */}
-        <div className="lg:col-span-2 space-y-2">
-          <div className="text-xs font-mono text-indigo-400 uppercase tracking-wider font-semibold">
-            Candidate Evaluation
-          </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-100 tracking-tight">
-            {report.candidateName}
-          </h1>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400 font-mono pt-1">
-            <span>ID: {report.candidateId}</span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5 text-zinc-400" />
-              {new Date(report.generatedAt).toLocaleDateString()}
-            </span>
-          </div>
-        </div>
-
-        {/* Primary Result Score Card */}
-        <div className="p-6 rounded-2xl bg-zinc-950/80 border border-zinc-800 text-center space-y-3 shadow-inner">
-          <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
-            Overall Demonstrated Score
-          </div>
-
-          <div className="flex items-baseline justify-center gap-1">
-            <span className="text-5xl font-extrabold font-mono text-zinc-100 tracking-tight">
-              {report.overall.score}
-            </span>
-            <span className="text-xl font-mono text-zinc-400">/100</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-2">
-            <span className="px-3 py-1 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-mono font-bold text-xs uppercase tracking-wider">
-              Level: {report.overall.level.replace("_", " ")}
-            </span>
-          </div>
-
-          {/* Section 3: Confidence UX with explanation */}
-          <div className="pt-2 border-t border-zinc-800/80 text-left space-y-1">
-            <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-              <span className="flex items-center gap-1">
-                <Award className="h-3.5 w-3.5 text-indigo-400" />
-                Confidence:
-              </span>
-              <span className="text-zinc-200 font-semibold">{confidenceLabel} ({confidencePercent}%)</span>
+        {/* Score climax */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-center py-6">
+          <div className="space-y-2 order-2 md:order-1">
+            <h1 className="text-3xl md:text-4xl font-bold text-zinc-50 tracking-tight">
+              {report.candidateName}
+            </h1>
+            <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono">
+              <Calendar className="h-3 w-3" />
+              <span>{new Date(report.generatedAt).toLocaleDateString()}</span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-tight">
-              {confidenceExplanation}
+            <p className="text-sm text-zinc-400 pt-2 max-w-md">
+              {confidenceLabel} evidence confidence
+              <span className="text-zinc-600"> · {confidencePercent}% across {report.completion.questionsAnswered} answered questions</span>
             </p>
           </div>
-        </div>
-      </div>
 
-      {/* Completion & Judge Coverage Banner */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-zinc-800/60 text-xs font-mono">
-        <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/60">
-          <div className="text-zinc-400 text-[10px]">Questions Answered</div>
-          <div className="text-base font-bold text-zinc-100">{report.completion.questionsAnswered}</div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/60">
-          <div className="text-zinc-400 text-[10px]">Curriculum Days</div>
-          <div className="text-base font-bold text-zinc-100">{report.completion.curriculumDaysCovered.length}</div>
+          <div className="order-1 md:order-2 mx-auto">
+            <ScoreArc
+              score={report.overall.score}
+              levelLabel={report.overall.level.replace("_", " ")}
+              size={190}
+            />
+          </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/60">
-          <div className="text-zinc-400 text-[10px]">Topics Assessed</div>
-          <div className="text-base font-bold text-zinc-100">{report.topicResults.length}</div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/60">
-          <div className="text-zinc-400 text-[10px]">Adaptive Events</div>
-          <div className="text-base font-bold text-indigo-400">{judgeTraceSummary?.adaptiveEventsCount || 0}</div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 border-t border-[var(--border)]">
+          {stats.map((s) => (
+            <div key={s.label} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--background)] p-3">
+              <div className="text-[10px] text-zinc-600 font-mono">{s.label}</div>
+              <MotionNumber value={s.value} className={`text-base font-bold font-mono ${s.accent}`} />
+            </div>
+          ))}
         </div>
       </div>
     </div>
